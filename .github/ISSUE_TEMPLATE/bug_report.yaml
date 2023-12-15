@@ -1,0 +1,63 @@
+name: 🐛 Report a bug
+description: File a bug report
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for submitting a bug report!
+
+        Please be patient, this is a volunteer-driven project. The best way to ensure your bug report is addressed is:
+
+        1. Provide as much information as possible.
+        2. Share a minimal reproduction. Bonus points for linking to a [CodeSandbox](https://codesandbox.io) or similar!
+        3. Be kind and patient. We all have lives outside of this project.
+        4. Consider contributing a fix! We will do our best to help you.
+  - type: input
+    attributes:
+      label: In which versions of the package (and relevant enviroment tools such as Node.js) have you observed the bug?
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: What steps will reproduce the bug?
+      description: Explain the bug and provide a minimal code example that reproduces the problem (or a link to a repo/sandbox).
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: What behavior did you expect?
+      description: A clear and concise description of what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: What actually happened?
+      description: A clear and concise description of what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: If you have a workaround, please share it here.
+  - type: textarea
+    id: proposed-fix
+    attributes:
+      label: Proposed fix
+      description: If you have a proposed solution, please share it here.
+  - type: textarea
+    id: other-remarks
+    attributes:
+      label: Other remarks
+      description: Any other information you'd like to share that is relevant to the issue being reported.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      description: Let us know if you'd like to contribute to the project. If so, we will be happy to help you and your reported issue will likely be prioritized.
+      options:
+        - label: I would like to try to contribute a fix

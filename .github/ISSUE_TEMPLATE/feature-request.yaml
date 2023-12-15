@@ -1,0 +1,42 @@
+name: 💡 Request a feature
+description: Suggest a new feature or enhancement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for submitting a feature request!
+
+        Please be patient, this is a volunteer-driven project. The best way to ensure your feature request is addressed is:
+
+        1. Provide detailed information about the use case for the feature.
+        2. Be kind and patient. We all have lives outside of this project.
+        3. Consider contributing the feature yourself! We will do our best to help you.
+
+        Please note that feature requests are not guaranteed to be implemented. The project's maintainers will decide whether or not to implement a feature request based on its usefulness to the project and its alignment with the project's goals.
+
+        Regardless of the outcome, we appreciate your interest in the project!
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature you'd like to see added to the project.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround / userland implementation
+      description: If you have a workaround or userland implementation, please share it here.
+  - type: textarea
+    id: other-remarks
+    attributes:
+      label: Other remarks
+      description: Any other information you'd like to share that is relevant to the feature request being submitted.
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      description: Let us know if you'd like to contribute to the project. If so, we will be happy to help you and your feature request will likely be prioritized.
+      options:
+        - label: I would like to contribute
