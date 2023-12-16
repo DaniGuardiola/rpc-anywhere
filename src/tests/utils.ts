@@ -22,9 +22,10 @@ export type Schema1 = RPCSchema<{
 
 const requestHandler2 = createRPCRequestHandler({
   method2: ({ b }: { b: string }) => b,
-  timesOut: () =>
+  async timesOut() {
     // shorter than what IE6 takes to load a page (remember when these jokes were funny?)
-    delay(DEFAULT_MAX_TIME * 999),
+    await delay(DEFAULT_MAX_TIME * 999);
+  },
 });
 
 export type Schema2 = RPCSchema<{

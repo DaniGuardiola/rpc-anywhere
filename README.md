@@ -195,7 +195,7 @@ To handle incoming requests, we need to define a request handler:
 const chefRpc = new RPC<ChefSchema, WorkerSchema>({
   // ...
   requestHandler: {
-    cook: ({ recipe }) => {
+    cook({ recipe }) {
       return cook(recipe, availableIngredients);
     },
   },
@@ -205,7 +205,7 @@ const chefRpc = new RPC<ChefSchema, WorkerSchema>({
 
 Now the chef RPC can respond to `cook` requests. Request handlers can be written in this "object" format or as a function (`requestHandler(method, params): response`).
 
-The "object" format also supports a "fallback" handler, which is called when a request is received that doesn't have a handler defined. To add it, use the `_` (underscore) key. It has the same signature as the "function" format (`_: (method, params) -> response`).
+The "object" format also supports a "fallback" handler, which is called when a request is received that doesn't have a handler defined. To add it, use the `_` (underscore) key. It has the same signature as the "function" format (`_(method, params): response`).
 
 All functions that handle requests can be synchronous or asynchronous.
 
@@ -318,7 +318,7 @@ rpc.request("requestName");
 // rpc-remote.ts ("server")
 const rpc = new RPC<RemoteSchema, EmptyRPCSchema>({
   requestHandler: {
-    requestName: () => {
+    requestName() {
       /* ... */
     },
   },
@@ -335,7 +335,7 @@ rpc.request("requestName");
 // rpc-remote.ts ("server")
 const rpc = RPC.asServer<RemoteSchema>({
   requestHandler: {
-    requestName: () => {
+    requestName() {
       /* ... */
     },
   },
@@ -368,7 +368,7 @@ The `send` function can be provided in the `RPC` options, or lazily set later us
 ```ts
 const rpc = new RPC<Schema>({
   // ...
-  send: (message) => {
+  send(message) {
     // send the message
   },
 });
@@ -411,10 +411,10 @@ It is passed to the `transport` option of the `RPC` constructor:
 
 ```ts
 const myTransport: RPCTransport = {
-  send: (message) => {
+  send(message) {
     sendMessage(message);
   },
-  registerHandler: (handler) => {
+  registerHandler(handler) {
     onMessage(handler);
   },
 };
@@ -528,17 +528,31 @@ Requests are handled using the `requestHandler` option of the `RPC` constructor.
 
 **Object format**
 
-The object format is the recommended way to define request handlers, because it is the most ergonomic, provides full type safety, and supports a "fallback" handler.
+The object format is the recommended way to define request handlers, because it is the most ergonomic, provides full type safety, and supports a "fallback" handler. All functions can be `async`.
 
 ```ts
 const rpc = new RPC<Schema>({
   // ...
   requestHandler: {
-    requestName: (/* request parameters */) => {
+    requestName(/* request parameters */) {
       /* handle the request */
       return /* response */;
     },
-    _: (method, params) => {
+    // or
+    async requestName(/* request parameters */) {
+      await doSomething();
+      /* handle the request */
+      return /* response */;
+    },
+
+    // fallback handler
+    _(method, params) {
+      /* handle requests that don't have a handler defined (not type-safe) */
+      return /* response */;
+    },
+    // or
+    async _(method, params) {
+      await doSomething();
       /* handle requests that don't have a handler defined (not type-safe) */
       return /* response */;
     },
@@ -557,7 +571,13 @@ This format is not type-safe, so it's recommended to use the object format inste
 ```ts
 const rpc = new RPC<Schema>({
   // ...
-  requestHandler: (method, params) => {
+  requestHandler(method, params) {
+    /* handle the request */
+    return /* response */;
+  },
+  // or
+  async requestHandler(method, params) {
+    await doSomething();
     /* handle the request */
     return /* response */;
   },
@@ -583,7 +603,7 @@ To do this, first create the request handler using `createRPCRequestHandler`:
 import { createRPCRequestHandler } from "rpc-anywhere";
 
 const myRequestHandler = createRPCRequestHandler({
-  requestName: (/* request parameters */) => {
+  requestName(/* request parameters */) {
     /* handle the request */
     return /* response */;
   },
