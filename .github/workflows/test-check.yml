@@ -14,4 +14,4 @@ jobs:
           node-version: 16.x
       - run: bun install --frozen-lockfile --ignore-scripts
       - name: Test
-        run: bun test
+        run: bun run test
