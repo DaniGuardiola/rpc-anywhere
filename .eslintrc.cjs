@@ -30,5 +30,7 @@ module.exports = {
       "error",
       { fixStyle: "inline-type-imports" },
     ],
+    // YOLO
+    "@typescript-eslint/no-explicit-any": "off",
   },
 };
