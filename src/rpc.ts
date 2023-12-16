@@ -20,6 +20,10 @@ import {
 const MAX_ID = 1e10;
 const DEFAULT_MAX_REQUEST_TIME = 1000;
 
+/**
+ * Creates an RPC instance that can send and receive requests, responses
+ * and messages.
+ */
 export class RPC<
   Schema extends RPCSchema = RPCSchema,
   RemoteSchema extends RPCSchema = Schema,
@@ -28,15 +32,35 @@ export class RPC<
   // ------------
 
   #send?: (message: any) => void;
-  setSend(send: (message: any) => void) {
+
+  /**
+   * Sets the function that will be used to send requests, responses and
+   * messages to the remote RPC instance.
+   */
+  setSend(
+    /**
+     * The function that will be set as the "send" function.
+     */
+    send: (message: any) => void,
+  ) {
     this.#send = send;
   }
 
   #requestHandler?: RPCRequestHandler<Schema["requests"]>;
-  setRequestHandler(handler: RPCRequestHandler<Schema["requests"]>) {
+
+  /**
+   * Sets the function that will be used to handle requests from the
+   * remote RPC instance.
+   */
+  setRequestHandler(
+    /**
+     * The function that will be set as the "request handler" function.
+     */
+    handler: RPCRequestHandler<Schema["requests"]>,
+  ) {
     this.#requestHandler = handler;
   }
-  getRequestHandler(errorMessageOnUnset: string) {
+  #getRequestHandler(errorMessageOnUnset: string) {
     if (typeof this.#requestHandler === "function") return this.#requestHandler;
     return (method: any, params: any) => {
       if (typeof this.#requestHandler === "function")
@@ -50,6 +74,10 @@ export class RPC<
     };
   }
 
+  /**
+   * Sets the transport that will be used to send and receive requests,
+   * responses and messages.
+   */
   setTransport({ send, registerHandler }: RPCTransport) {
     this.setSend(send);
     registerHandler(this.handle.bind(this));
@@ -59,12 +87,17 @@ export class RPC<
   // ------------
 
   #maxRequestTime: number;
-  constructor({
-    transport,
-    send,
-    requestHandler,
-    maxRequestTime = DEFAULT_MAX_REQUEST_TIME,
-  }: RPCOptions<Schema> = {}) {
+  constructor(
+    /**
+     * The options that will be used to configure the RPC instance.
+     */
+    {
+      transport,
+      send,
+      requestHandler,
+      maxRequestTime = DEFAULT_MAX_REQUEST_TIME,
+    }: RPCOptions<Schema> = {},
+  ) {
     this.#lastRequestId = 0;
 
     const resolvedSend = transport?.send ?? send;
@@ -74,13 +107,27 @@ export class RPC<
     this.#maxRequestTime = maxRequestTime;
   }
 
+  /**
+   * Creates an RPC instance as a client. The passed schema represents
+   * the remote RPC's (server) schema.
+   */
   static asClient<RemoteSchema extends RPCSchema = RPCSchema>(
+    /**
+     * The options that will be used to configure the RPC instance.
+     */
     options: RPCOptions<EmptyRPCSchema>,
   ) {
     return new RPC<EmptyRPCSchema, RemoteSchema>(options);
   }
 
+  /**
+   * Creates an RPC instance as a server. The passed schema represents
+   * this RPC's (server) schema.
+   */
   static asServer<Schema extends RPCSchema = RPCSchema>(
+    /**
+     * The options that will be used to configure the RPC instance.
+     */
     options: RPCOptions<Schema>,
   ) {
     return new RPC<Schema, EmptyRPCSchema>(options);
@@ -99,6 +146,11 @@ export class RPC<
     { resolve: (result: unknown) => void; reject: (error: Error) => void }
   >();
   #requestTimeouts = new Map<number, ReturnType<typeof setTimeout>>();
+
+  /**
+   * Sends a request to the remote RPC endpoint and returns a promise
+   * with the response.
+   */
   request<Method extends keyof RemoteSchema["requests"]>(
     method: Method,
     ...args: "params" extends keyof RemoteSchema["requests"][Method]
@@ -133,6 +185,9 @@ export class RPC<
     }) as Promise<any>;
   }
 
+  /**
+   * A proxy that allows calling requests as if they were functions.
+   */
   requestProxy = new Proxy(
     {},
     {
@@ -146,7 +201,13 @@ export class RPC<
   // messages
   // --------
 
+  /**
+   * Sends a message to the remote RPC endpoint.
+   */
   send<Message extends keyof Schema["messages"]>(
+    /**
+     * The name of the message to send.
+     */
     message: Message,
     ...args: void extends RPCMessagePayload<Schema["messages"], Message>
       ? []
@@ -169,16 +230,50 @@ export class RPC<
   #wildcardMessageListeners = new Set<
     (messageName: any, payload: any) => void
   >();
+
+  /**
+   * Adds a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   addMessageListener(
+    /**
+     * The name of the message to listen to. Use "*" to listen to all
+     * messages.
+     */
     message: "*",
+    /**
+     * The function that will be called when a message is received.
+     */
     listener: WildcardRPCMessageHandlerFn<RemoteSchema["messages"]>,
   ): void;
+  /**
+   * Adds a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   addMessageListener<Message extends keyof RemoteSchema["messages"]>(
+    /**
+     * The name of the message to listen to. Use "*" to listen to all
+     * messages.
+     */
     message: Message,
+    /**
+     * The function that will be called when a message is received.
+     */
     listener: RPCMessageHandlerFn<RemoteSchema["messages"], Message>,
   ): void;
+  /**
+   * Adds a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   addMessageListener<Message extends keyof RemoteSchema["messages"]>(
+    /**
+     * The name of the message to listen to. Use "*" to listen to all
+     * messages.
+     */
     message: "*" | Message,
+    /**
+     * The function that will be called when a message is received.
+     */
     listener:
       | WildcardRPCMessageHandlerFn<RemoteSchema["messages"]>
       | RPCMessageHandlerFn<RemoteSchema["messages"], Message>,
@@ -192,16 +287,49 @@ export class RPC<
     this.#messageListeners.get(message)?.add(listener as any);
   }
 
+  /**
+   * Removes a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   removeMessageListener(
+    /**
+     * The name of the message to remove the listener for. Use "*" to
+     * remove a listener for all messages.
+     */
     message: "*",
+    /**
+     * The listener function that will be removed.
+     */
     listener: WildcardRPCMessageHandlerFn<RemoteSchema["messages"]>,
   ): void;
+  /**
+   * Removes a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   removeMessageListener<Message extends keyof RemoteSchema["messages"]>(
+    /**
+     * The name of the message to remove the listener for. Use "*" to
+     * remove a listener for all messages.
+     */
     message: Message,
+    /**
+     * The listener function that will be removed.
+     */
     listener: RPCMessageHandlerFn<RemoteSchema["messages"], Message>,
   ): void;
+  /**
+   * Removes a listener for a message (or all if "*" is used) from the
+   * remote RPC endpoint.
+   */
   removeMessageListener<Message extends keyof RemoteSchema["messages"]>(
+    /**
+     * The name of the message to remove the listener for. Use "*" to
+     * remove a listener for all messages.
+     */
     message: "*" | Message,
+    /**
+     * The listener function that will be removed.
+     */
     listener:
       | WildcardRPCMessageHandlerFn<RemoteSchema["messages"]>
       | RPCMessageHandlerFn<RemoteSchema["messages"], Message>,
@@ -218,6 +346,9 @@ export class RPC<
   // message handling
   // ----------------
 
+  /**
+   * Handles a request, response or message from the remote RPC endpoint.
+   */
   async handle(
     message:
       | RPCRequestFromSchema<Schema["requests"]>
@@ -238,7 +369,7 @@ export class RPC<
           type: "response",
           id,
           success: true,
-          payload: await this.getRequestHandler(
+          payload: await this.#getRequestHandler(
             'This RPC instance cannot send requests because the "requestHandler" function is not set. Pass it to the constructor or use "setSend" to enable handling requests.',
           )(method, params),
         };
