@@ -206,18 +206,18 @@ type ParamsFromFunction<T extends (...args: any) => any> =
   Parameters<T> extends []
     ? unknown
     : undefined extends Parameters<T>[0]
-    ? {
-        /**
-         * The method's parameters.
-         */
-        params?: Parameters<T>[0];
-      }
-    : {
-        /**
-         * The method's parameters.
-         */
-        params: Parameters<T>[0];
-      };
+      ? {
+          /**
+           * The method's parameters.
+           */
+          params?: Parameters<T>[0];
+        }
+      : {
+          /**
+           * The method's parameters.
+           */
+          params: Parameters<T>[0];
+        };
 type ReturnFromFunction<T extends (...args: any) => any> =
   void extends ReturnType<T>
     ? unknown
