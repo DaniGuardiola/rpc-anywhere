@@ -118,7 +118,7 @@ export type RPCRequestResponse<
   Method extends keyof RequestsSchema = keyof RequestsSchema,
 > = "response" extends keyof RequestsSchema[Method]
   ? RequestsSchema[Method]["response"]
-  : never;
+  : void;
 
 /**
  * A utility type for getting the request low-level message from
@@ -155,7 +155,7 @@ export type RPCRequestHandlerFn<
    * The parameters that have been passed.
    */
   params: RPCRequestParams<RequestsSchema, Method>,
-) => Promise<any>;
+) => any | Promise<any>;
 /**
  * A request handler in "object" form.
  */
@@ -166,10 +166,14 @@ export type RPCRequestHandlerObject<
     /**
      * The parameters that have been passed.
      */
-    params: RPCRequestParams<RequestsSchema, Method>,
+    ...args: "params" extends keyof RequestsSchema[Method]
+      ? undefined extends RequestsSchema[Method]["params"]
+        ? [params?: RequestsSchema[Method]["params"]]
+        : [params: RequestsSchema[Method]["params"]]
+      : []
   ) =>
-    | RPCRequestResponse<RequestsSchema, Method>
-    | Promise<RPCRequestResponse<RequestsSchema, Method>>;
+    | Awaited<RPCRequestResponse<RequestsSchema, Method>>
+    | Promise<Awaited<RPCRequestResponse<RequestsSchema, Method>>>;
 } & {
   /**
    * A fallback method that will be called if no other method
@@ -202,18 +206,18 @@ type ParamsFromFunction<T extends (...args: any) => any> =
   Parameters<T> extends []
     ? unknown
     : undefined extends Parameters<T>[0]
-    ? {
-        /**
-         * The method's parameters.
-         */
-        params?: Parameters<T>[0];
-      }
-    : {
-        /**
-         * The method's parameters.
-         */
-        params: Parameters<T>[0];
-      };
+      ? {
+          /**
+           * The method's parameters.
+           */
+          params?: Parameters<T>[0];
+        }
+      : {
+          /**
+           * The method's parameters.
+           */
+          params: Parameters<T>[0];
+        };
 type ReturnFromFunction<T extends (...args: any) => any> =
   void extends ReturnType<T>
     ? unknown
@@ -221,7 +225,7 @@ type ReturnFromFunction<T extends (...args: any) => any> =
         /**
          * The method's response payload.
          */
-        response: ReturnType<T>;
+        response: Awaited<ReturnType<T>>;
       };
 type Flatten<T> = { [K in keyof T]: T[K] };
 type VoidIfEmpty<T> = T extends NonNullable<unknown> ? Flatten<T> : void;
