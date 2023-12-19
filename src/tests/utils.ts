@@ -1,5 +1,5 @@
 import { createRPCRequestHandler } from "../create-request-handler.js";
-import { RPC } from "../rpc.js";
+import { createRPC } from "../create-rpc.js";
 import { type RPCSchema } from "../types.js";
 
 export const DEFAULT_MAX_TIME = 1000;
@@ -54,10 +54,10 @@ function createMockEndpoint() {
 }
 
 export function createTestRPCs() {
-  const rpc1 = new RPC<Schema1, Schema2>({
+  const rpc1 = createRPC<Schema1, Schema2>({
     requestHandler: requestHandler1,
   });
-  const rpc2 = new RPC<Schema2, Schema1>({
+  const rpc2 = createRPC<Schema2, Schema1>({
     requestHandler: requestHandler2,
   });
   const mockEndpoint1 = createMockEndpoint();

@@ -40,15 +40,15 @@ It also ships with a few transports out of the box for common use cases.
 <details>
 <summary><b>Why should I use RPC Anywhere?</b></summary>
 
-> While there are many RPC libraries out there, most of them are tied to a specific transport layer, too opinionated, too simple, or not type-safe.
+> While there are some really great RPC libraries out there, many of them are focused in a specific use-case, and come with trade-offs like being tied to a specific transport layer, very opinionated, very simple, or not type-safe.
 >
-> Because of this, many people end up creating their own RPC implementations, "reinventing the wheel" over and over again. [In a Twitter poll, over 75% of respondents said they had done it at some point.](https://x.com/daniguardio_la/status/1735854964574937483?s=20)
+> Because of this, many people end up creating their own RPC implementations, "reinventing the wheel" over and over again. [In a Twitter poll, over 75% of respondents said they had done it at some point.](https://x.com/daniguardio_la/status/1735854964574937483?s=20) You've probably done it too!
 >
 > By contrast, RPC Anywhere is designed to be the last RPC library you'll ever need. The features of a specific RPC (schema, requests, messages, etc.) are completely decoupled from the transport layer, so you can set it up and forget about it.
 >
-> In fact, you can replace the transport layer at any time, and the RPC will keep working exactly the same way.
+> In fact, you can replace the transport layer at any time, and the RPC will keep working exactly the same way (except that messages will travel through different means).
 >
-> RPC Anywhere manages to be flexible without sacrificing type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint.
+> RPC Anywhere manages to be flexible and simple without sacrificing robust type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint.
 >
 > If you're missing a feature, feel free to open an issue! The goal is to make RPC Anywhere the best RPC library out there.
 
@@ -69,7 +69,9 @@ It also ships with a few transports out of the box for common use cases.
   - [RPC schemas](#rpc-schemas)
   - [Transports](#transports)
   - [Built-in transports](#built-in-transports)
+    - [Iframes, service workers, broadcast channels... (message ports)](#iframes-service-workers-broadcast-channels-message-ports)
     - [Web extensions transport](#web-extensions-transport)
+  - [Transport bridges](#transport-bridges)
   - [Requests](#requests-1)
     - [Making requests](#making-requests)
     - [The request proxy API](#the-request-proxy-api)
@@ -79,8 +81,9 @@ It also ships with a few transports out of the box for common use cases.
   - [Messages](#messages-1)
     - [Sending messages](#sending-messages)
     - [Listening for messages](#listening-for-messages)
+- [Type safety features](#type-safety-features)
 - [Features under consideration](#features-under-consideration)
-- [Prior art and motivation](#prior-art-and-motivation)
+- [Prior art](#prior-art)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -96,11 +99,11 @@ It also ships with a few transports out of the box for common use cases.
 - Promise-based with optional proxy API (`rpc.requestProxy.methodName(params)`).
 - Infers schema type from request handler.
 - Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
-- Out-of-the-box transports:
+- Ready-to-use transports:
   - Message ports: `window`, iframes, workers, broadcast channels, etc.
   - Web extensions: content scripts <-> service worker.
 
-**This package is ESM-only.**
+**This package is ESM-only at the moment.** File an issue if this is problem for you.
 
 ## <a name='Gettingstarted'></a>Getting started
 
@@ -153,47 +156,26 @@ type WorkerSchema = RPCSchema<{
 Then, we create each RPC instance:
 
 ```ts
-import { RPC } from "rpc-anywhere";
+import { createRPC } from "rpc-anywhere";
 
 // chef-rpc.ts
-const chefRpc = new RPC<ChefSchema, WorkerSchema>({
+const chefRpc = createRPC<ChefSchema, WorkerSchema>({
   transport: {
     send: (message) => sendToWorker(message),
     registerHandler: (handler) => onWorkerMessage(handler),
 });
 
 // worker-rpc.ts
-const workerRpc = new RPC<WorkerSchema, ChefSchema>({
+const workerRpc = createRPC<WorkerSchema, ChefSchema>({
   transport: {
     send: (message) => sendToChef(message),
     registerHandler: (handler) => onChefMessage(handler),
 });
 ```
 
-Let's break this down.
+Schema types are passed as type parameters to `RPC`. Note how the first one is the schema of the RPC being created, and the second one is the schema of the RPC on the other endpoint (a.k.a. the "remote" schema). This is why the order of the type parameters in the example is different for each endpoint.
 
-**Schema types**
-
-Schema types are passed as type parameters to `RPC`.
-
-The first one is the schema of the RPC being created, and the second one is the schema of the RPC on the other endpoint (a.k.a. the "remote" schema). This is why the order of the type parameters in the example is different for each endpoint.
-
-A schema defines the requests that a specific endpoint can respond to, and the messages that it can send. Since RPC Anywhere doesn't enforce a client-server architecture, each endpoint has its own schema, and both `RPC` instances need to "know" about the other's schema.
-
-Schema types bring type safety to an instance, both when acting as a "client" (sending requests and listening for messages) and as a "server" (responding to requests and sending messages).
-
-**Transports**
-
-RPC Anywhere is transport-agnostic. To "teach" an `RPC` instance how to communicate with the other endpoint, you need to give it ways to send and listen for messages.
-
-- **To send:** provide a `send` function in the `RPC` options.
-- **To listen:** call the `handle` method whenever a message is received.
-
-In the example above, functions like `sendToWorker` and `onWorkerMessage` are used. These functions are intentionally left undefined because the point is that they could be anything!
-
-Here's a real-world example: messages can be sent to an iframe through `iframeWindow.postMessage()`, and received from it through `window.addEventListener('message', handler)`.
-
-The possibilities are endless.
+RPC Anywhere is transport-agnostic: you need to "teach" it how to communicate by giving it ways to send and listen for messages for the other endpoint. A common real-world example is communicating with an iframe through `iframeWindow.postMessage()` and `window.addEventListener('message', handler)`.
 
 ### <a name='Messages'></a>Messages
 
@@ -201,8 +183,6 @@ Here's how the chef RPC could listen for incoming messages from the worker RPC:
 
 ```ts
 // chef-rpc.ts
-const chefRpc = new RPC<ChefSchema, WorkerSchema>(/* ... */);
-// ...
 chefRpc.addMessageListener("takingABreak", ({ duration, reason }) => {
   console.log(
     `The worker is taking a break for ${duration} minutes: ${reason}`,
@@ -214,8 +194,6 @@ The worker can then send a message to the chef:
 
 ```ts
 // worker-rpc.ts
-const workerRpc = new RPC<WorkerSchema, ChefSchema>(/* ... */);
-// ...
 workerRpc.send("takingABreak", { duration: 30, reason: "lunch" });
 ```
 
@@ -231,7 +209,7 @@ To handle incoming requests, we need to define a request handler:
 
 ```ts
 // chef-rpc.ts
-const chefRpc = new RPC<ChefSchema, WorkerSchema>({
+const chefRpc = createRPC<ChefSchema, WorkerSchema>({
   // ...
   requestHandler: {
     cook({ recipe }) {
@@ -242,18 +220,12 @@ const chefRpc = new RPC<ChefSchema, WorkerSchema>({
 // ...
 ```
 
-Now the chef RPC can respond to `cook` requests. Request handlers can be written in this "object" format or as a function (`requestHandler(method, params): response`).
-
-The "object" format also supports a "fallback" handler, which is called when a request is received that doesn't have a handler defined. To add it, use the `_` (underscore) key. It has the same signature as the "function" format (`_(method, params): response`).
-
-All functions that handle requests can be synchronous or asynchronous.
+Now the chef RPC can respond to `cook` requests. Request handlers can be written in this "object" format or as a function (`requestHandler(method, params): response`). All functions that handle requests can be synchronous or asynchronous.
 
 To make a request, there are two main options:
 
 ```ts
 // worker-rpc.ts
-const workerRpc = new RPC<WorkerSchema, ChefSchema>(/* ... */);
-// ...
 
 // using ".request()"
 const dish = await workerRpc.request("cook", { recipe: "pizza" });
@@ -263,13 +235,17 @@ const dish = await workerRpc.requestProxy.cook({ recipe: "pizza" });
 
 Both are functionally equivalent.
 
-> Note: remember to handle errors!
+> **Note:** requests can fail for various reasons, like an execution error, a missing method handler, or a timeout. Make sure to handle errors appropriately when making requests.
 
 ## <a name='Documentation'></a>Documentation
 
 ### <a name='RPCschemas'></a>RPC schemas
 
-Schemas are declared using the `RPCSchema<InputSchema>` type, using the following structure:
+A schema defines the requests that a specific endpoint can respond to, and the messages that it can send. Since RPC Anywhere doesn't enforce a client-server architecture, each endpoint has its own schema, and both `RPC` instances need to "know" about the other's schema.
+
+Schema types bring type safety to an instance, both when acting as a "client" (sending requests and listening for messages) and as a "server" (responding to requests and sending messages).
+
+Schemas are declared with the `RPCSchema<InputSchema>` type, using the following structure:
 
 ```ts
 import { type RPCSchema } from "rpc-anywhere";
@@ -302,7 +278,7 @@ type MySchema = RPCSchema<{
     requestName: {
       params?: {
         direction: "up" | "down";
-        velocity: number;
+        velocity?: number;
       };
       response: string | number;
     };
@@ -364,15 +340,15 @@ const rpc = new RPC<RemoteSchema, EmptyRPCSchema>({
 });
 ```
 
-For convenience, the alternative `asClient` and `asServer` constructors can be used:
+For convenience, the `createClientRPC` and `createServerRPC` functions can be used. They both take the remote (server) schema as a type parameter, as it is the one that matters (the local/client one is necessarily empty).
 
 ```ts
 // rpc-local.ts ("client")
-const rpc = RPC.asClient<RemoteSchema>(/* ... */);
-rpc.request("requestName");
+const rpc = createClientRPC<RemoteSchema>(/* ... */);
+await rpc.request("requestName");
 
 // rpc-remote.ts ("server")
-const rpc = RPC.asServer<RemoteSchema>({
+const rpc = createServerRPC<RemoteSchema>({
   requestHandler: {
     requestName() {
       /* ... */
@@ -385,90 +361,60 @@ If both RPC instances are "symmetrical" (i.e. they both handle the same requests
 
 ```ts
 // rpc-a.ts
-const rpcA = new RPC<SymmetricalSchema>(/* ... */);
+const rpcA = createRPC<SymmetricalSchema>(/* ... */);
 
 // rpc-b.ts
-const rpcB = new RPC<SymmetricalSchema>(/* ... */);
+const rpcB = createRPC<SymmetricalSchema>(/* ... */);
 ```
 
 In this case, the passed schema will be interpreted as both the local and remote schema.
 
 ### <a name='Transports'></a>Transports
 
-Unless you're using a built-in transport (more on this below), you're in charge of creating it and connecting the RPC instances to it.
+Using a built-in transport (more about them below) is strongly recommended if possible. If you can't find one that fits your use case, you're in charge of creating it and connecting the RPC instances to it.
 
 An RPC transport is the channel through which messages are sent and received between point A and point B. This looks different in every context, but the requirements to hook it up to an RPC instance are simple:
 
 - Provide a `send` function that takes an arbitrary message and sends it to the other endpoint.
-- Call the RPC `handle` method whenever a message is received from the other endpoint.
+- Provide a `registerHandler` method that takes a callback and calls it whenever a message is received from the other endpoint.
+- Provide an `unregisterHandler` method that removes or deactivates the previously set handler. This might be necessary if the transport is updated at runtime (through `rpc.setTransport(transport)`), as it is called to clean up before registering the new handler.
 
-The `send` function can be provided in the `RPC` options, or lazily set later using the `setSend` method. For example:
+The transport can be provided in the `RPC` options, or lazily set at a later time using the `setTransport` method. For example:
 
 ```ts
-const rpc = new RPC<Schema>({
-  // ...
-  send(message) {
-    // send the message
+const rpc = createRPC<Schema>({
+  transport: {
+    send(message) {
+      // send the message
+    },
+    registerHandler(handler) {
+      // register the handler
+    },
+    unregisterHandler() {
+      // unregister the handler
+    },
   },
 });
 
 // or
 
-const rpc = new RPC<Schema>();
-rpc.setSend((message) => {
-  // send the message
-});
-```
-
-The `handle` method needs to be called whenever a message is received from the other endpoint.
-
-```ts
-const rpc = new RPC<Schema>();
-onMessage((message) => {
-  rpc.handle(message);
-});
-```
-
-If you're passing the `handle` method directly as a callback, remember to bind it to the RPC instance:
-
-```ts
-onMessage(rpc.handle.bind(rpc));
-```
-
----
-
-Alternatively, you can create a transport and pass it to the `RPC` constructor as an option. A transport looks like this:
-
-```ts
-type RPCTransport = {
-  send: (message: unknown) => void;
-  registerHandler: (handler: (message: any) => void) => void;
-};
-```
-
-It is passed to the `transport` option of the `RPC` constructor:
-
-```ts
-const myTransport: RPCTransport = {
+const rpc = createRPC<Schema>();
+rpc.setTransport({
   send(message) {
-    sendMessage(message);
+    // send the message
   },
   registerHandler(handler) {
-    onMessage(handler);
+    // register the handler
   },
-};
-
-const rpc = new RPC<Schema>({
-  transport: myTransport,
+  unregisterHandler() {
+    // unregister the handler
+  },
 });
 ```
 
-Transports can also be set lazily with the `setTransport` method:
+All three transport methods are optional. Omitting `unregisterHandler` is fine if the transport doesn't need to be updated at runtime. However, if `send` or `registerHandler` are missing, the RPC will fail when attempting to send or receive messages, respectively.
 
-```ts
-const rpc = new RPC<Schema>();
-rpc.setTransport(myTransport);
-```
+While uncommon, this might be acceptable for certain use cases, such as unidirectional RPCs that only send messages in one direction (in that case, there is no need for the ability to send messages in the opposite direction).
 
 ### <a name='Built-intransports'></a>Built-in transports
 
@@ -478,6 +424,10 @@ For example, a transport for web extensions (content scripts <-> service worker)
 
 A full list of built-in transports can be found below.
 
+#### <a name='Iframesserviceworkersbroadcastchannels...messageports'></a>Iframes, service workers, broadcast channels... (message ports)
+
+TODO: section.
+
 #### <a name='Webextensionstransport'></a>Web extensions transport
 
 ```ts
@@ -486,7 +436,7 @@ function createTransportFromBrowserRuntimePort(
 ): Transport;
 ```
 
-Create RPCs between a content script and a service worker, using browser runtime ports.
+Create RPCs between a content script and a service worker, using browser runtime ports. TODO: add links.
 
 **Example**
 
@@ -519,6 +469,10 @@ browser.runtime.onConnect.addListener((port) => {
   }
 });
 ```
+
+### <a name='Transportbridges'></a>Transport bridges
+
+TODO: section.
 
 ### <a name='Requests-1'></a>Requests
 
@@ -553,7 +507,7 @@ const response = await rpc.requestProxy.requestName({
 If a request takes too long to complete, it will time out and be rejected with an error. The default request timeout is 1000 milliseconds. You can change it by passing a `maxRequestTime` option to the `RPC` constructor:
 
 ```ts
-const rpc = new RPC<Schema>({
+const rpc = createRPC<Schema>({
   // ...
   maxRequestTime: 5000,
 });
@@ -570,7 +524,7 @@ Requests are handled using the `requestHandler` option of the `RPC` constructor.
 The object format is the recommended way to define request handlers, because it is the most ergonomic, provides full type safety, and supports a "fallback" handler. All functions can be `async`.
 
 ```ts
-const rpc = new RPC<Schema>({
+const rpc = createRPC<Schema>({
   // ...
   requestHandler: {
     requestName(/* request parameters */) {
@@ -608,7 +562,7 @@ The function format is useful when you need to handle requests dynamically, dele
 This format is not type-safe, so it's recommended to use the object format instead whenever possible.
 
 ```ts
-const rpc = new RPC<Schema>({
+const rpc = createRPC<Schema>({
   // ...
   requestHandler(method, params) {
     /* handle the request */
@@ -628,7 +582,7 @@ const rpc = new RPC<Schema>({
 The request handler can also be set lazily with the `setRequestHandler` method:
 
 ```ts
-const rpc = new RPC<Schema>();
+const rpc = createRPC<Schema>();
 rpc.setRequestHandler(/* ... */);
 ```
 
@@ -650,16 +604,22 @@ const myRequestHandler = createRPCRequestHandler({
 });
 ```
 
-To use it within a Schema type, pass it wrapped in `RPCRequestSchemaFromHandler`:
+To use it in a schema type, pass its type as the second type parameter by using `typeof`:
 
 ```ts
 import { type RPCRequestSchemaFromHandler } from "rpc-anywhere";
 
-type Schema = RPCSchema<{
-  requests: RPCRequestSchemaFromHandler<typeof myRequestHandler>;
-  // ...
-}>;
+type Schema = RPCSchema<
+  {
+    messages: {
+      // ...
+    };
+  },
+  typeof myRequestHandler
+>;
 ```
+
+The schema will then infer the `requests` property type from the request handler. Note that if you do define the `requests` property in the first type argument, **it will be completely ignored** and overridden with the inferred type.
 
 Finally, pass the schema type and the request handler to the `RPC` constructor:
 
@@ -682,7 +642,7 @@ rpc.send("messageName", {
 });
 ```
 
-The content can be omitted if the message doesn't have any:
+The content can be omitted if the message doesn't have any or if it's optional:
 
 ```ts
 rpc.send("messageName");
@@ -713,22 +673,17 @@ rpc.removeMessageListener("messageName", listener);
 rpc.removeMessageListener("*", listener);
 ```
 
+## <a name='Typesafetyfeatures'></a>Type safety features
+
+TODO: section.
+
 ## <a name='Featuresunderconsideration'></a>Features under consideration
 
-- Improve type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler. Thoughts:
+- Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler. Thoughts:
   - Likely possible to allow type discrimination by passing an object instead of separate parameters.
   - Is it possible to provide type safety for the return value at all?
   - In the fallback handler, is it possible to "filter out" the already declared methods?
 
-## <a name='Priorartandmotivation'></a>Prior art and motivation
-
-All of the JavaScript RPC libraries I've tried in the past suffered from a combination of the following shortcomings:
-
-- Lacking type safety.
-- Too opinionated.
-- Inflexible (e.g. limited to a client-server architecture).
-- Tied to a specific transport layer.
-
-This has led me to create custom RPC implementations over time. After the 2837th time, I decided to sit down and create a library that ticked all the boxes.
+## <a name='Priorart'></a>Prior art
 
 RPC Anywhere is inspired by JSON-RPC, with a few small differences. For example, the concept of "messages" in RPC Anywhere resembles "notifications" in JSON-RPC. Some implementation details (like using an `id` property in requests and responses) are also similar.
