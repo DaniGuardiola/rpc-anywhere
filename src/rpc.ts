@@ -1,4 +1,5 @@
 import {
+  type ConstrainedRPC,
   type EmptyRPCSchema,
   type RPCMessage,
   type RPCMessageFromSchema,
@@ -103,8 +104,13 @@ export class RPC<
   static create<
     Schema extends RPCSchema = RPCSchema,
     RemoteSchema extends RPCSchema = Schema,
-  >() {
-    return "TODO";
+  >(
+    /**
+     * The options that will be used to configure the RPC instance.
+     */
+    options: RPCOptions<Schema> = {},
+  ): ConstrainedRPC<Schema, RemoteSchema> {
+    return new RPC(options) as any;
   }
 
   /**

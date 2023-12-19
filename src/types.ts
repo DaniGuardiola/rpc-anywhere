@@ -1,6 +1,8 @@
 // data
 // ----
 
+import { type RPC } from "./rpc.js";
+
 /**
  * A low-level RPC message representing a request.
  */
@@ -361,6 +363,37 @@ export type RPCSchema<
  * handle any requests or send any messages ("client").
  */
 export type EmptyRPCSchema = RPCSchema;
+
+type OmitByLocalSchema<Schema extends RPCSchema> =
+  | (NonNullable<unknown> extends Schema["requests"]
+      ? "setRequestHandler"
+      : never)
+  | (NonNullable<unknown> extends Schema["messages"] ? "send" : never);
+
+type OmitByRemoteSchema<Schema extends RPCSchema> =
+  | (NonNullable<unknown> extends Schema["requests"]
+      ? "request" | "requestProxy"
+      : never)
+  | (NonNullable<unknown> extends Schema["messages"]
+      ? "addMessageListener" | "removeMessageListener"
+      : never);
+
+/**
+ * A utility type for getting an RPC type that is tailored to a
+ * specific schema. Methods will be ommitted if they are not
+ * supported according to the schema.
+ *
+ * For example, if the remote schema doesn't have a `requests`
+ * property, the `request` method will be omitted because it
+ * won't be able to handle requests.
+ */
+export type ConstrainedRPC<
+  Schema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = Omit<
+  RPC<Schema, RemoteSchema>,
+  OmitByLocalSchema<Schema> | OmitByRemoteSchema<RemoteSchema>
+>;
 
 // transports
 // ----------
