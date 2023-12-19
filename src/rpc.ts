@@ -8,6 +8,7 @@ import {
   type RPCRequest,
   type RPCRequestFromSchema,
   type RPCRequestHandler,
+  type RPCRequestHandlerFn,
   type RPCRequestResponse,
   type RPCRequestsProxy,
   type RPCResponse,
@@ -20,6 +21,13 @@ import {
 const MAX_ID = 1e10;
 const DEFAULT_MAX_REQUEST_TIME = 1000;
 
+function missingTransportMethodError(methods: string[], action: string) {
+  const methodsString = methods.map((method) => `"${method}"`).join(", ");
+  return new Error(
+    `This RPC instance cannot ${action} because the transport did not provide one or more of these methods: ${methodsString}`,
+  );
+}
+
 /**
  * Creates an RPC instance that can send and receive requests, responses
  * and messages.
@@ -31,22 +39,19 @@ export class RPC<
   // lazy setters
   // ------------
 
-  #send?: (message: any) => void;
+  #transport: RPCTransport = {};
 
   /**
-   * Sets the function that will be used to send requests, responses and
-   * messages to the remote RPC instance.
+   * Sets the transport that will be used to send and receive requests,
+   * responses and messages.
    */
-  setSend(
-    /**
-     * The function that will be set as the "send" function.
-     */
-    send: (message: any) => void,
-  ) {
-    this.#send = send;
+  setTransport(transport: RPCTransport) {
+    if (this.#transport.unregisterHandler) this.#transport.unregisterHandler();
+    this.#transport = transport;
+    this.#transport.registerHandler?.(this.#handler.bind(this));
   }
 
-  #requestHandler?: RPCRequestHandler<Schema["requests"]>;
+  #requestHandler?: RPCRequestHandlerFn<Schema["requests"]>;
 
   /**
    * Sets the function that will be used to handle requests from the
@@ -58,29 +63,18 @@ export class RPC<
      */
     handler: RPCRequestHandler<Schema["requests"]>,
   ) {
-    this.#requestHandler = handler;
-  }
-  #getRequestHandler(errorMessageOnUnset: string) {
-    if (typeof this.#requestHandler === "function") return this.#requestHandler;
-    return (method: any, params: any) => {
-      if (typeof this.#requestHandler === "function")
-        throw new Error("Unexpected function");
-      if (!this.#requestHandler) throw new Error(errorMessageOnUnset);
-      // @ts-expect-error Type safety not very important here.
-      const handler = this.#requestHandler[method] ?? this.#requestHandler._;
-      if (typeof handler !== "function")
-        throw new Error(`Unknown method: ${method}`);
-      return handler(params);
+    if (typeof handler === "function") {
+      this.#requestHandler = handler;
+      return;
+    }
+    this.#requestHandler = (method: keyof Schema["requests"], params: any) => {
+      const handlerFn = handler[method];
+      if (handlerFn) return handlerFn(params);
+      const fallbackHandler = handler._;
+      if (!fallbackHandler)
+        throw new Error(`Unknown method: ${method as string}`);
+      return fallbackHandler(method, params);
     };
-  }
-
-  /**
-   * Sets the transport that will be used to send and receive requests,
-   * responses and messages.
-   */
-  setTransport({ send, registerHandler }: RPCTransport) {
-    this.setSend(send);
-    registerHandler(this.handle.bind(this));
   }
 
   // constructors
@@ -91,20 +85,26 @@ export class RPC<
     /**
      * The options that will be used to configure the RPC instance.
      */
-    {
+    options: RPCOptions<Schema> = {},
+  ) {
+    const {
       transport,
-      send,
       requestHandler,
       maxRequestTime = DEFAULT_MAX_REQUEST_TIME,
-    }: RPCOptions<Schema> = {},
-  ) {
-    this.#lastRequestId = 0;
-
-    const resolvedSend = transport?.send ?? send;
-    if (resolvedSend) this.setSend(resolvedSend);
-    transport?.registerHandler(this.handle.bind(this));
+    } = options;
+    if (transport) this.setTransport(transport);
     if (requestHandler) this.setRequestHandler(requestHandler);
     this.#maxRequestTime = maxRequestTime;
+  }
+
+  /**
+   * Creates an RPC instance.
+   */
+  static create<
+    Schema extends RPCSchema = RPCSchema,
+    RemoteSchema extends RPCSchema = Schema,
+  >() {
+    return "TODO";
   }
 
   /**
@@ -161,10 +161,8 @@ export class RPC<
   ): Promise<RPCRequestResponse<RemoteSchema["requests"], Method>> {
     const params = args[0];
     return new Promise((resolve, reject) => {
-      if (!this.#send)
-        throw new Error(
-          'This RPC instance cannot send requests because the "send" function is not set. Pass it to the constructor or use "setSend" to enable sending requests.',
-        );
+      if (!this.#transport.send)
+        throw missingTransportMethodError(["send"], "make requests");
       const requestId = this.#getRequestId();
       const request: RPCRequest = {
         type: "request",
@@ -181,7 +179,7 @@ export class RPC<
             reject(new Error("RPC request timed out."));
           }, this.#maxRequestTime),
         );
-      this.#send(request);
+      this.#transport.send(request);
     }) as Promise<any>;
   }
 
@@ -214,16 +212,14 @@ export class RPC<
       : [payload: RPCMessagePayload<Schema["messages"], Message>]
   ) {
     const payload = args[0];
-    if (!this.#send)
-      throw new Error(
-        'This RPC instance cannot send messages because the "send" function is not set. Pass it to the constructor or use "setSend" to enable sending messages.',
-      );
+    if (!this.#transport.send)
+      throw missingTransportMethodError(["send"], "send messages");
     const rpcMessage: RPCMessage = {
       type: "message",
       id: message as string,
       payload,
     };
-    this.#send(rpcMessage);
+    this.#transport.send(rpcMessage);
   }
 
   #messageListeners = new Map<any, Set<(payload: any) => void>>();
@@ -278,6 +274,11 @@ export class RPC<
       | WildcardRPCMessageHandlerFn<RemoteSchema["messages"]>
       | RPCMessageHandlerFn<RemoteSchema["messages"], Message>,
   ): void {
+    if (!this.#transport.registerHandler)
+      throw missingTransportMethodError(
+        ["registerHandler"],
+        "register message listeners",
+      );
     if (message === "*") {
       this.#wildcardMessageListeners.add(listener as any);
       return;
@@ -346,10 +347,7 @@ export class RPC<
   // message handling
   // ----------------
 
-  /**
-   * Handles a request, response or message from the remote RPC endpoint.
-   */
-  async handle(
+  async #handler(
     message:
       | RPCRequestFromSchema<Schema["requests"]>
       | RPCResponseFromSchema<RemoteSchema["requests"]>
@@ -358,9 +356,10 @@ export class RPC<
     if (!("type" in message))
       throw new Error("Message does not contain a type.");
     if (message.type === "request") {
-      if (!this.#send)
-        throw new Error(
-          'This RPC instance cannot handle requests because the "send" function is not set. Pass it to the constructor or use "setSend" to enable handling requests.',
+      if (!this.#transport.send || !this.#requestHandler)
+        throw missingTransportMethodError(
+          ["send", "requestHandler"],
+          "handle requests",
         );
       const { id, method, params } = message;
       let response: RPCResponse;
@@ -369,9 +368,7 @@ export class RPC<
           type: "response",
           id,
           success: true,
-          payload: await this.#getRequestHandler(
-            'This RPC instance cannot send requests because the "requestHandler" function is not set. Pass it to the constructor or use "setSend" to enable handling requests.',
-          )(method, params),
+          payload: await this.#requestHandler(method, params),
         };
       } catch (error) {
         if (!(error instanceof Error)) throw error;
@@ -382,7 +379,7 @@ export class RPC<
           error: error.message,
         };
       }
-      this.#send(response);
+      this.#transport.send(response);
       return;
     }
     if (message.type === "response") {

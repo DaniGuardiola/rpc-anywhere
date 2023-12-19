@@ -14,6 +14,46 @@ RPC Anywhere lets you create RPCs in **any** context, as long as you can provide
 
 It also ships with a few transports out of the box for common use cases.
 
+<details>
+<summary><b>What is an RPC?</b></summary>
+
+> In the context of this library, an RPC is a connection between two endpoints, which send messages to each other.
+>
+> If the sender expects a response, it's called a "request". A request is similar to a function call where the function is executed on the other side of the connection, and the result is sent back to the sender.
+>
+> [Learn more about the general concept of RPCs on Wikipedia.](https://www.wikiwand.com/en/Remote_procedure_call)
+
+</details>
+
+<details>
+<summary><b>What is a transport layer?</b></summary>
+
+> A transport layer is the "channel" through which messages are sent and received between point A and point B. Some very common examples of endpoints:
+>
+> - Websites: iframes, service workers...
+> - Browser extensions: content scripts, service workers...
+> - Tabs: `localStorage` events, `BroadcastChannel`...
+> - Electron: `ipcRenderer`, `ipcMain`...
+
+</details>
+
+<details>
+<summary><b>Why should I use RPC Anywhere?</b></summary>
+
+> While there are many RPC libraries out there, most of them are tied to a specific transport layer, too opinionated, too simple, or not type-safe.
+>
+> Because of this, many people end up creating their own RPC implementations, "reinventing the wheel" over and over again. [In a Twitter poll, over 75% of respondents said they had done it at some point.](https://x.com/daniguardio_la/status/1735854964574937483?s=20)
+>
+> By contrast, RPC Anywhere is designed to be the last RPC library you'll ever need. The features of a specific RPC (schema, requests, messages, etc.) are completely decoupled from the transport layer, so you can set it up and forget about it.
+>
+> In fact, you can replace the transport layer at any time, and the RPC will keep working exactly the same way.
+>
+> RPC Anywhere manages to be flexible without sacrificing type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint.
+>
+> If you're missing a feature, feel free to open an issue! The goal is to make RPC Anywhere the best RPC library out there.
+
+</details>
+
 ## <a name='Contents'></a>Contents
 
 <!-- vscode-markdown-toc -->
@@ -50,17 +90,14 @@ It also ships with a few transports out of the box for common use cases.
 
 ## <a name='Features'></a>Features
 
-- Type-safe.
-- Flexible (no client-server architecture).
-- Transport-agnostic.
-- Well-tested.
-- Promise-based.
-- Customizable request timeout.
-- Supports requests and messages.
-- Supports a request proxy API (`rpc.requestProxy.methodName(params)`).
-- Supports an object API with fallback for request handling.
-- Supports lazy transport initialization (e.g. `rpc.setSend(sendFn)`)
-- Included transports:
+- Type-safe and well-tested.
+- Transport agnostic.
+- Flexible (no enforced client-server architecture).
+- Promise-based with optional proxy API (`rpc.requestProxy.methodName(params)`).
+- Infers schema type from request handler.
+- Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
+- Out-of-the-box transports:
+  - Message ports: `window`, iframes, workers, broadcast channels, etc.
   - Web extensions: content scripts <-> service worker.
 
 **This package is ESM-only.**
@@ -120,15 +157,17 @@ import { RPC } from "rpc-anywhere";
 
 // chef-rpc.ts
 const chefRpc = new RPC<ChefSchema, WorkerSchema>({
-  send: (message) => sendToWorker(message),
+  transport: {
+    send: (message) => sendToWorker(message),
+    registerHandler: (handler) => onWorkerMessage(handler),
 });
-onWorkerMessage((message) => chefRpc.handle(message));
 
 // worker-rpc.ts
 const workerRpc = new RPC<WorkerSchema, ChefSchema>({
-  send: (message) => sendToChef(message),
+  transport: {
+    send: (message) => sendToChef(message),
+    registerHandler: (handler) => onChefMessage(handler),
 });
-onChefMessage((message) => workerRpc.handle(message));
 ```
 
 Let's break this down.

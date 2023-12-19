@@ -329,13 +329,18 @@ type InputRPCSchema = {
    */
   messages?: RPCMessagesSchema;
 };
-type ResolvedRPCSchema<InputSchema extends InputRPCSchema> = {
+type ResolvedRPCSchema<
+  InputSchema extends InputRPCSchema,
+  RequestHandler extends RPCRequestHandlerObject | undefined = undefined,
+> = {
   /**
    * A schema for requests.
    */
-  requests: undefined extends InputSchema["requests"]
-    ? BaseRPCRequestsSchema
-    : NonNullable<InputSchema["requests"]>;
+  requests: RequestHandler extends RPCRequestHandlerObject
+    ? RPCRequestSchemaFromHandler<RequestHandler>
+    : undefined extends InputSchema["requests"]
+      ? BaseRPCRequestsSchema
+      : NonNullable<InputSchema["requests"]>;
   /**
    * A schema for messages.
    */
@@ -346,8 +351,10 @@ type ResolvedRPCSchema<InputSchema extends InputRPCSchema> = {
 /**
  * A schema for requests and messages.
  */
-export type RPCSchema<InputSchema extends InputRPCSchema = InputRPCSchema> =
-  ResolvedRPCSchema<InputSchema>;
+export type RPCSchema<
+  InputSchema extends InputRPCSchema = InputRPCSchema,
+  RequestHandler extends RPCRequestHandlerObject | undefined = undefined,
+> = ResolvedRPCSchema<InputSchema, RequestHandler>;
 
 /**
  * An "empty" schema. Represents an RPC endpoint that doesn't
@@ -358,6 +365,8 @@ export type EmptyRPCSchema = RPCSchema;
 // transports
 // ----------
 
+export type RPCTransportHandler = (message: any) => void;
+
 /**
  * A transport object that will be used to send and receive
  * messages.
@@ -367,12 +376,17 @@ export type RPCTransport = {
    * The function that will be used to send requests, responses,
    * and messages.
    */
-  send: (message: unknown) => void;
+  send?: (message: any) => void;
   /**
    * The function that will be used to register a handler for
    * incoming requests, responses, and messages.
    */
-  registerHandler: (handler: (message: any) => void) => void;
+  registerHandler?: (handler: RPCTransportHandler) => void;
+  /**
+   * The function that will be used to unregister the handler
+   * (to clean up when replacing the transport).
+   */
+  unregisterHandler?: () => void;
 };
 
 // options
@@ -388,11 +402,6 @@ export type RPCOptions<Schema extends RPCSchema> = {
    * the transport's `send` function.
    */
   transport?: RPCTransport;
-
-  /**
-   * The function that will be used to send messages.
-   */
-  send?: (message: unknown) => void;
 
   /**
    * The function that will be used to handle requests.
