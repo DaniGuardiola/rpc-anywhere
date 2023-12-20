@@ -5,7 +5,7 @@
 </div>
 <div align="right">
 
-[**Next: Bridging transports**](./3-built-in-transports.md)
+[**Next: Bridging transports**](./3-bridging-transports.md)
 
 </div>
 
@@ -20,6 +20,6 @@ To do...
 </div>
 <div align="right">
 
-[**Next: Bridging transports**](./3-built-in-transports.md)
+[**Next: Bridging transports**](./3-bridging-transports.md)
 
 </div>

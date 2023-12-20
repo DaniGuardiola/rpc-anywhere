@@ -1,6 +1,6 @@
 <div align="left">
 
-[**Previous: Bridging transports**](./3-built-in-transports.md)
+[**Previous: Bridging transports**](./3-bridging-transports.md)
 
 </div>
 
@@ -10,6 +10,6 @@ To do...
 
 <div align="left">
 
-[**Previous: Bridging transports**](./3-built-in-transports.md)
+[**Previous: Bridging transports**](./3-bridging-transports.md)
 
 </div>
