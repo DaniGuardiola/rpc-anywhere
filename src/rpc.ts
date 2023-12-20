@@ -174,7 +174,8 @@ export function _createRPC<
    * ```
    */
   const request = new Proxy(requestFn, {
-    get: (_, prop) => {
+    get: (target, prop, receiver) => {
+      if (prop in target) return Reflect.get(target, prop, receiver);
       // @ts-expect-error Not very important.
       return (params: unknown) => requestFn(prop, params);
     },
@@ -222,7 +223,8 @@ export function _createRPC<
    * ```
    */
   const send = new Proxy(sendFn, {
-    get: (_, prop) => {
+    get: (target, prop, receiver) => {
+      if (prop in target) return Reflect.get(target, prop, receiver);
       // @ts-expect-error Not very important.
       return (payload: unknown) => sendFn(prop, payload);
     },
