@@ -20,6 +20,14 @@ test("request() returns the right values", async () => {
   expect(response2).toBe(1234);
 });
 
+test("request as proxy returns the right values", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+  const response1 = await rpc1.request.method2({ b: "hello" });
+  expect(response1).toBe("hello");
+  const response2 = await rpc2.request.method1({ a: 1234 });
+  expect(response2).toBe(1234);
+});
+
 test("requestProxy returns the right values", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   const response1 = await rpc1.requestProxy.method2({ b: "hello" });
@@ -108,6 +116,46 @@ test("messages are sent and received correctly", async () => {
   expect(received2).toBe(2);
 });
 
+test("send proxy sends messages correctly", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+  let received1 = 0;
+  let received2 = 0;
+  const listener: RPCMessageHandlerFn<Schema2["messages"], "message2"> = (
+    payload,
+  ) => {
+    expect(payload).toBe("second");
+    received2++;
+  };
+  rpc1.addMessageListener("message2", listener);
+  rpc2.addMessageListener("message1", (payload) => {
+    expect(payload).toBe("first");
+    received1++;
+  });
+
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(1);
+  expect(received2).toBe(1);
+
+  rpc1.removeMessageListener("message2", listener);
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(2);
+  expect(received2).toBe(1);
+
+  rpc1.addMessageListener("message2", listener);
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(3);
+  expect(received2).toBe(2);
+});
+
 test("wildcard message handler works", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   let receivedCount = 0;
@@ -143,3 +191,5 @@ test("wildcard message handler works", async () => {
   expect(lastNameReceived).toBe("message3");
   expect(lastPayloadReceived).toBe("third");
 });
+
+// TODO: find a way to run these tests with all actual transports too.

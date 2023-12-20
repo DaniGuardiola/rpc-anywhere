@@ -1,6 +1,8 @@
 // data
 // ----
 
+import { type _RPCOptions, type RPCInstance } from "./rpc.js";
+
 /**
  * A low-level RPC message representing a request.
  */
@@ -189,7 +191,7 @@ export type RPCRequestHandlerObject<
      */
     params: RPCRequestParams<RequestsSchema>,
   ) => any;
-  // TODO: this return type causes some problems
+  // TODO: this return type causes some problems.
   // | RPCRequestResponse<RequestsSchema>
   // | Promise<RPCRequestResponse<RequestsSchema>>;
 };
@@ -253,7 +255,7 @@ export type RPCRequestSchemaFromHandler<
 };
 
 /**
- * A request proxy.
+ * A request proxy that allows calling requests as methods.
  */
 export type RPCRequestsProxy<RequestsSchema extends RPCRequestsSchema> = {
   [K in keyof RequestsSchema]: (
@@ -316,6 +318,19 @@ export type WildcardRPCMessageHandlerFn<
   payload: RPCMessagePayload<MessagesSchema>,
 ) => void;
 
+/**
+ * A message proxy that allows sending messages through methods.
+ */
+export type RPCMessagesProxy<MessagesSchema extends RPCMessagesSchema> = {
+  [K in keyof MessagesSchema]-?: (
+    ...args: void extends MessagesSchema[K]
+      ? []
+      : undefined extends MessagesSchema[K]
+        ? [payload?: MessagesSchema[K]]
+        : [payload: MessagesSchema[K]]
+  ) => void;
+};
+
 // schema
 // ------
 
@@ -329,13 +344,18 @@ type InputRPCSchema = {
    */
   messages?: RPCMessagesSchema;
 };
-type ResolvedRPCSchema<InputSchema extends InputRPCSchema> = {
+type ResolvedRPCSchema<
+  InputSchema extends InputRPCSchema,
+  RequestHandler extends RPCRequestHandlerObject | undefined = undefined,
+> = {
   /**
    * A schema for requests.
    */
-  requests: undefined extends InputSchema["requests"]
-    ? BaseRPCRequestsSchema
-    : NonNullable<InputSchema["requests"]>;
+  requests: RequestHandler extends RPCRequestHandlerObject
+    ? RPCRequestSchemaFromHandler<RequestHandler>
+    : undefined extends InputSchema["requests"]
+      ? BaseRPCRequestsSchema
+      : NonNullable<InputSchema["requests"]>;
   /**
    * A schema for messages.
    */
@@ -346,8 +366,10 @@ type ResolvedRPCSchema<InputSchema extends InputRPCSchema> = {
 /**
  * A schema for requests and messages.
  */
-export type RPCSchema<InputSchema extends InputRPCSchema = InputRPCSchema> =
-  ResolvedRPCSchema<InputSchema>;
+export type RPCSchema<
+  InputSchema extends InputRPCSchema = InputRPCSchema,
+  RequestHandler extends RPCRequestHandlerObject | undefined = undefined,
+> = ResolvedRPCSchema<InputSchema, RequestHandler>;
 
 /**
  * An "empty" schema. Represents an RPC endpoint that doesn't
@@ -358,6 +380,8 @@ export type EmptyRPCSchema = RPCSchema;
 // transports
 // ----------
 
+export type RPCTransportHandler = (data: any) => void;
+
 /**
  * A transport object that will be used to send and receive
  * messages.
@@ -367,42 +391,103 @@ export type RPCTransport = {
    * The function that will be used to send requests, responses,
    * and messages.
    */
-  send: (message: unknown) => void;
+  send?: (data: any) => void;
   /**
    * The function that will be used to register a handler for
    * incoming requests, responses, and messages.
    */
-  registerHandler: (handler: (message: any) => void) => void;
+  registerHandler?: (handler: RPCTransportHandler) => void;
+  /**
+   * The function that will be used to unregister the handler
+   * (to clean up when replacing the transport).
+   */
+  unregisterHandler?: () => void;
 };
 
 // options
 // -------
 
+type RPCBaseOption = "transport";
+type RPCRequestsInOption = "requestHandler";
+type RPCRequestsOutOption = "maxRequestTime";
+
+type OptionsByLocalSchema<Schema extends RPCSchema> =
+  NonNullable<unknown> extends Schema["requests"] ? never : RPCRequestsInOption;
+
+type OptionsByRemoteSchema<RemoteSchema extends RPCSchema> =
+  NonNullable<unknown> extends RemoteSchema["requests"]
+    ? never
+    : RPCRequestsOutOption;
+
 /**
- * Options for creating an RPC instance.
+ * Options for creating an RPC instance, tailored to a specific
+ * set of schemas. Options will be ommitted if they are not
+ * supported according to the schemas.
+ *
+ * For example, if the remote schema doesn't have a `requests`
+ * property, the `maxRequestTime` option will be omitted because
+ * the instance won't be able to send requests.
  */
-export type RPCOptions<Schema extends RPCSchema> = {
-  /**
-   * A transport object that will be used to send and receive
-   * messages. Setting the `send` function manually will override
-   * the transport's `send` function.
-   */
-  transport?: RPCTransport;
+export type RPCOptions<
+  Schema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = Pick<
+  _RPCOptions<Schema>,
+  | RPCBaseOption
+  | OptionsByLocalSchema<Schema>
+  | OptionsByRemoteSchema<RemoteSchema>
+>;
 
-  /**
-   * The function that will be used to send messages.
-   */
-  send?: (message: unknown) => void;
+// rpc
+// ---
 
-  /**
-   * The function that will be used to handle requests.
-   */
-  requestHandler?: RPCRequestHandler<Schema["requests"]>;
+type RPCMethods = "setTransport";
+type RPCRequestsInMethod = "setRequestHandler";
+type RPCRequestsOutMethod = "request" | "requestProxy";
+type RPCMessagesInMethod = "addMessageListener" | "removeMessageListener";
+type RPCMessagesOutMethod = "send" | "sendProxy";
+type RPCRequestsOutMessagesOutMethod = "proxy";
 
-  /**
-   * The maximum time to wait for a response to a request, in
-   * milliseconds. If exceeded, the promise will be rejected.
-   * @default 1000
-   */
-  maxRequestTime?: number;
-};
+type MethodsByLocalSchema<Schema extends RPCSchema> =
+  | (NonNullable<unknown> extends Schema["requests"]
+      ? never
+      : RPCRequestsInMethod)
+  | (NonNullable<unknown> extends Schema["messages"]
+      ? never
+      : RPCMessagesOutMethod);
+
+type MethodsByRemoteSchema<RemoteSchema extends RPCSchema> =
+  | (NonNullable<unknown> extends RemoteSchema["requests"]
+      ? never
+      : RPCRequestsOutMethod)
+  | (NonNullable<unknown> extends RemoteSchema["messages"]
+      ? never
+      : RPCMessagesInMethod);
+type MethodsByRemoteSchemaAndLocalSchema<
+  LocalSchema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = NonNullable<unknown> extends LocalSchema["messages"]
+  ? never
+  : NonNullable<unknown> extends RemoteSchema["requests"]
+    ? never
+    : RPCRequestsOutMessagesOutMethod;
+
+/**
+ * An RPC instance type, tailored to a specific set of schemas.
+ * Methods will be ommitted if they are not supported according
+ * to the schemas.
+ *
+ * For example, if the remote schema doesn't have a `requests`
+ * property, the `request` method will be omitted because the
+ * instance won't be able to send requests.
+ */
+export type RPC<
+  Schema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = Pick<
+  RPCInstance<Schema, RemoteSchema>,
+  | RPCMethods
+  | MethodsByLocalSchema<Schema>
+  | MethodsByRemoteSchema<RemoteSchema>
+  | MethodsByRemoteSchemaAndLocalSchema<Schema, RemoteSchema>
+>;
