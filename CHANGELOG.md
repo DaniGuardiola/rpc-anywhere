@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.3.4
+
+### Patch Changes
+
+- 4046d0b: Fix: transport utils - ID and filter exclusivity check.
+
 ## 1.3.3
 
 ### Patch Changes
