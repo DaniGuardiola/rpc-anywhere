@@ -1,4 +1,4 @@
-# Documentation
+# Documentation index
 
 This directory contains the documentation for `rpc-anywhere`.
 

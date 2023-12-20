@@ -9,6 +9,8 @@
 
 </div>
 
+<h1>RPC</h1>
+
 <h2>Table of contents</h2>
 
 <!-- vscode-markdown-toc -->
