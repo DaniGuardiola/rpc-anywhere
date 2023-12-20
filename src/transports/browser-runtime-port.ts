@@ -41,7 +41,7 @@ export function createTransportFromBrowserRuntimePort(
   let transportHandler: ((message: any, port: Port) => void) | undefined;
   return {
     send(data) {
-      port.postMessage.bind(rpcTransportMessageOut(data, { transportId }));
+      port.postMessage(rpcTransportMessageOut(data, { transportId }));
     },
     registerHandler(handler) {
       transportHandler = (message, port) => {
