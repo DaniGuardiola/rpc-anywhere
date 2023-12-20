@@ -26,7 +26,7 @@ export type RPCBrowserRuntimePortTransportOptions = Pick<
    * as arguments. For example, messages can be filtered
    * based on `port.name` or `port.sender`.
    */
-  filter?: (message: any, port: Port) => boolean;
+  filter?: (message: any, port: Browser.Runtime.Port) => boolean;
 };
 
 /**
@@ -47,7 +47,7 @@ export function createTransportFromBrowserRuntimePort(
       transportHandler = (message, port) => {
         const [ignore, data] = rpcTransportMessageIn(message, {
           transportId,
-          filter: () => filter?.(message, port),
+          filter: () => filter?.(message, port as Browser.Runtime.Port),
         });
         if (ignore) return;
         handler(data);
