@@ -1,7 +1,7 @@
 {
   "name": "rpc-anywhere",
   "description": "Create a type-safe RPC anywhere.",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "author": {
     "email": "hi@daniguardio.la",
     "name": "Dani Guardiola",
