@@ -38,7 +38,8 @@ export function rpcTransportMessageIn(
   options: RPCTransportOptions,
 ): [ignore: false, message: any] | [ignore: true] {
   const { transportId, filter } = options;
-  if (transportId != null && filter)
+  const filterResult = filter?.();
+  if (transportId != null && filterResult != null)
     throw new Error(
       "Cannot use both `transportId` and `filter` at the same time",
     );
@@ -48,6 +49,6 @@ export function rpcTransportMessageIn(
     if (message.transportId !== transportId) return [true];
     data = message.data;
   }
-  if (filter?.() === false) return [true];
+  if (filterResult === false) return [true];
   return [false, data];
 }
