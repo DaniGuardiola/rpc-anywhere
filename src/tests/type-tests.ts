@@ -10,6 +10,7 @@ rpc1.setRequestHandler({});
 // @ts-expect-error - Expected error.
 rpc1.send("method");
 rpc1.request("method");
+rpc1.request.method();
 rpc1.requestProxy.method();
 // @ts-expect-error - Expected error.
 rpc1.addMessageListener("method", console.log);
@@ -23,7 +24,7 @@ const rpc2 = createRPC<NoRequestsSchema>();
 rpc2.setRequestHandler({});
 rpc2.send("method");
 // @ts-expect-error - Expected error.
-rpc2.request("method");
+rpc2.request.method();
 // @ts-expect-error - Expected error.
 rpc2.requestProxy.method();
 rpc2.addMessageListener("method", console.log);

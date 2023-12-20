@@ -72,7 +72,7 @@ It also ships with a few transports out of the box for common use cases.
   - [Messages](#messages)
   - [Requests](#requests)
 - [Documentation](#documentation)
-- [Type safety features](#type-safety-features)
+- [Type safety and features](#type-safety-and-features)
 - [Features under consideration](#features-under-consideration)
 - [Prior art](#prior-art)
 
@@ -87,7 +87,7 @@ It also ships with a few transports out of the box for common use cases.
 - Type-safe and well-tested.
 - Transport agnostic.
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy API (`rpc.requestProxy.methodName(params)`).
+- Promise-based with optional proxy API (`rpc.request.methodName(params)`).
 - Infers schema type from request handler.
 - Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
 - Ready-to-use transports:
@@ -221,7 +221,7 @@ To make a request, there are two main options:
 // using ".request()"
 const dish = await workerRpc.request("cook", { recipe: "pizza" });
 // using the request proxy API
-const dish = await workerRpc.requestProxy.cook({ recipe: "pizza" });
+const dish = await workerRpc.request.cook({ recipe: "pizza" });
 ```
 
 Both are functionally equivalent.
@@ -239,7 +239,7 @@ Read the documentation:
 
 The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywhere/).
 
-## <a name='Typesafetyfeatures'></a>Type safety features
+## <a name='Typesafetyfeatures'></a>Type safety and features
 
 TODO: section.
 

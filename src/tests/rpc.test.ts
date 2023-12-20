@@ -20,6 +20,14 @@ test("request() returns the right values", async () => {
   expect(response2).toBe(1234);
 });
 
+test("request as proxy returns the right values", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+  const response1 = await rpc1.request.method2({ b: "hello" });
+  expect(response1).toBe("hello");
+  const response2 = await rpc2.request.method1({ a: 1234 });
+  expect(response2).toBe(1234);
+});
+
 test("requestProxy returns the right values", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   const response1 = await rpc1.requestProxy.method2({ b: "hello" });

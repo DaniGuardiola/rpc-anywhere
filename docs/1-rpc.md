@@ -211,9 +211,18 @@ const response = await rpc.request("requestName");
 Alternatively, you can use the request proxy API:
 
 ```ts
-const response = await rpc.requestProxy.requestName({
+const response = await rpc.request.requestName({
   /* request parameters */
 });
+```
+
+The `rpc.request` property acts as a function and as an object at the same time, which means that, when autocompleting with TypeScript (when you type `rpc.request.`), some suggestions will be properties from the function prototype (`apply`, `bind`, `call`, etc.).
+
+If you want a version that only contains the proxied methods (e.g. for a better developer experience or for aliasing), you can use `requestProxy` instead:
+
+```ts
+const worker = workerRpc.requestProxy;
+const response = await worker.methodName(param: "value");
 ```
 
 ### <a name='Requesttimeout'></a>Request timeout

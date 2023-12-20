@@ -60,6 +60,11 @@ export function _createRPC<
   // -------
 
   let transport: RPCTransport = {};
+
+  /**
+   * Sets the transport that will be used to send and receive requests,
+   * responses and messages.
+   */
   function setTransport(newTransport: RPCTransport) {
     if (transport.unregisterHandler) transport.unregisterHandler();
     transport = newTransport;
@@ -116,7 +121,11 @@ export function _createRPC<
   >();
   const requestTimeouts = new Map<number, ReturnType<typeof setTimeout>>();
 
-  function request<Method extends keyof RemoteSchema["requests"]>(
+  /**
+   * Sends a request to the remote RPC endpoint and returns a promise
+   * with the response.
+   */
+  function requestFn<Method extends keyof RemoteSchema["requests"]>(
     method: Method,
     ...args: "params" extends keyof RemoteSchema["requests"][Method]
       ? undefined extends RemoteSchema["requests"][Method]["params"]
@@ -149,17 +158,28 @@ export function _createRPC<
   }
 
   /**
-   * A proxy that allows calling requests as if they were functions.
+   * Sends a request to the remote RPC endpoint and returns a promise
+   * with the response.
+   *
+   * It can also be used as a proxy to send requests by using the request
+   * name as a property name.
+   *
+   * @example
+   *
+   * ```js
+   * await rpc.request("methodName", { param: "value" });
+   * // or
+   * await rpc.request.methodName({ param: "value" });
+   * ```
    */
-  const requestProxy = new Proxy(
-    {},
-    {
-      get: (_, prop) => {
-        // @ts-expect-error Not very important.
-        return (params: unknown) => request(prop, params);
-      },
+  const request = new Proxy(requestFn, {
+    get: (_, prop) => {
+      // @ts-expect-error Not very important.
+      return (params: unknown) => requestFn(prop, params);
     },
-  ) as RPCRequestsProxy<RemoteSchema["requests"]>;
+  }) as typeof requestFn & RPCRequestsProxy<RemoteSchema["requests"]>;
+
+  const requestProxy = request as RPCRequestsProxy<RemoteSchema["requests"]>;
 
   // messages
   // --------
