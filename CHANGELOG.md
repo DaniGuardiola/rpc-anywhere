@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.3.3
+
+### Patch Changes
+
+- 1c92feb: Fix: createTransportFromBrowserRuntimePort send function will actually send now.
+
 ## 1.3.2
 
 ### Patch Changes
