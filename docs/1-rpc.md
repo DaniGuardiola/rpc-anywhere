@@ -1,8 +1,7 @@
-## <a name='Index'></a>Index
+<h1>Table of contents</h1>
 
 <!-- vscode-markdown-toc -->
 
-- [Index](#index)
 - [RPC schemas](#rpc-schemas)
 - [Transports](#transports)
 - [Built-in transports](#built-in-transports)
