@@ -43,18 +43,26 @@ const response1Proxy = await rpc.request.method1({ paramA: 1234 });
 //                                       ^^^^^^^   ^^^^^^
 response1Proxy.propA;
 //             ^^^^^
+rpc.proxy.request.method1({ paramA: 1234 });
+//                ^^^^^^^   ^^^^^^
 rpc.request.method2();
 //          ^^^^^^^
+rpc.proxy.request.method2();
+//                ^^^^^^^
 rpc.send("message1", { propertyA: "hello" });
 //                     ^^^^^^^^^
 rpc.send.message1({ propertyA: "hello" });
 //       ^^^^^^^^   ^^^^^^^^^
+rpc.proxy.send.message1({ propertyA: "hello" });
+//             ^^^^^^^^   ^^^^^^^^^
 rpc.addMessageListener("message1", ({ propertyA }) => {
   //                                  ^^^^^^^^^
   propertyA;
 });
 rpc.send.message2();
 //       ^^^^^^^^
+rpc.proxy.send.message2();
+//             ^^^^^^^^
 
 // |------------------|
 // |  TESTS END HERE  |
