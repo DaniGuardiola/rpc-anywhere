@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.3.2
+
+### Patch Changes
+
+- 2e447f8: Fix: better filter type for `createTransportFromBrowserRuntimePort`'s `filter` option.
+
 ## 1.3.1
 
 ### Patch Changes
