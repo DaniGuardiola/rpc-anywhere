@@ -9,7 +9,7 @@
 
 </div>
 
-<h1>Table of contents</h1>
+<h2>Table of contents</h2>
 
 <!-- vscode-markdown-toc -->
 
@@ -468,3 +468,16 @@ A listener can be removed with the `removeMessageListener` method:
 rpc.removeMessageListener("messageName", listener);
 rpc.removeMessageListener("*", listener);
 ```
+
+---
+
+<div align="left">
+
+[**Previous: Documentation index**](./README.md)
+
+</div>
+<div align="right">
+
+[**Next: Built-in transports**](./2-built-in-transports.md)
+
+</div>

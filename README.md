@@ -234,7 +234,7 @@ Read the documentation:
 
 - [RPC](./docs/1-rpc.md)
 - [Built-in transports](./docs/2-built-in-transports.md)
-- [Bridging transports](./docs/3-built-in-transports.md)
+- [Bridging transports](./docs/3-bridging-transports.md)
 - [Creating a custom transport](./docs/4-creating-a-custom-transport.md)
 
 The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywhere/).
