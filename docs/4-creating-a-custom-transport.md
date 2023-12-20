@@ -72,7 +72,7 @@ For example, an iframe can communicate with its parent window using `parentWindo
 
 There are many ways to solve this problem, like including a unique ID in messages or filtering by checking some contextual information (e.g. a window message event's `origin` property). If you think this might be relevant for your transport, consider adding some way to differentiate a transport's messages from others.
 
-All built-in transports provide ways to achieve this by either providing a unique ID or a custom filtering function. They use [a few utilities](../src/transport-utils.ts) that are also available for you to use. If you want to see how they work, [check out the source of the built-in transports](../transports), as well as [the source of the utilities](../src/transport-utils.ts).
+All built-in transports provide ways to achieve this by either providing a unique ID or a custom filtering function. They use [a few utilities](../src/transport-utils.ts) that are also available for you to use. If you want to see how they work, [check out the source of the built-in transports](../src/transports), as well as [the source of the utilities](../src/transport-utils.ts).
 
 ---
 
