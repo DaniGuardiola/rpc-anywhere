@@ -50,7 +50,7 @@ It also ships with a few transports out of the box for common use cases.
 >
 > RPC Anywhere manages to be flexible and simple without sacrificing robust type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint.
 >
-> If you're missing a feature, feel free to open an issue! The goal is to make RPC Anywhere the best RPC library out there.
+> If you're missing a feature, feel free to [file a feature request](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)! The goal is to make RPC Anywhere the best RPC library out there.
 
 </details>
 
@@ -683,6 +683,8 @@ TODO: section.
   - Likely possible to allow type discrimination by passing an object instead of separate parameters.
   - Is it possible to provide type safety for the return value at all?
   - In the fallback handler, is it possible to "filter out" the already declared methods?
+- A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport. To make this type safe with nice inference, [partial type argument inference](https://github.com/microsoft/TypeScript/issues/26242) would be nice.
+- [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art
 

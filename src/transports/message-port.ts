@@ -1,28 +1,26 @@
+import {
+  rpcTransportMessageIn,
+  rpcTransportMessageOut,
+  type RPCTransportOptions,
+} from "../transport-utils.js";
 import { type RPCTransport } from "../types.js";
 
 /**
  * Options for the message port transport.
  */
-export type RPCMessagePortTransportHandlerOptions = {
+export type RPCMessagePortTransportOptions = Pick<
+  RPCTransportOptions,
+  "transportId"
+> & {
   /**
-   * An optional unique ID to use for the transport. Useful in cases where
-   * messages could be sent to or received from multiple sources, which
-   * causes issues.
+   * A filter function that determines if a message should be processed or
+   * ignored. Like the `transportId` option, but more flexible to allow for
+   * more complex use-cases.
    *
-   * For example, messages could be sent to the same window from multiple
-   * sources (other RPC transports or other code). The IDs can be used to
-   * differentiate between them.
-   */
-  id?: string | number;
-
-  /**
-   * A way to filter messages based on the message event
-   * ([`MessageEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent)).
-   * Like the `transportId` option, but more flexible to allow for more
-   * complex use-cases.
-   *
-   * For example, messages can be filtered based on the `origin` or `source`
-   * properties of the message event.
+   * It receives the
+   * [`MessageEvent`](https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent)
+   * object as its only argument. For example, messages can be filtered
+   * based on `event.origin` or `event.source`.
    */
   filter?: (event: MessageEvent) => boolean;
 };
@@ -44,46 +42,31 @@ export function createTransportFromMessagePort(
   /**
    * Options for the message port transport.
    */
-  options: RPCMessagePortTransportHandlerOptions = {},
+  options: RPCMessagePortTransportOptions = {},
 ): RPCTransport {
-  const { id: transportId, filter } = options;
-  if (transportId != null && filter)
-    throw new Error(
-      "Cannot use both `transportId` and `filter` options at the same time",
-    );
+  const { transportId, filter } = options;
+  const target = messageEventTarget as Window; // little white TypeScript lie
 
-  let transportHandler: ((event: MessageEvent) => void) | undefined;
+  let transportHandler: ((event: MessageEvent) => any) | undefined;
   return {
-    send(message) {
-      if (transportId != null) {
-        messageEventTarget.postMessage({ transportId, message });
-        return;
-      }
-      messageEventTarget.postMessage;
+    send(data) {
+      target.postMessage(rpcTransportMessageOut(data, { transportId }));
     },
     registerHandler(handler) {
       transportHandler = (event: MessageEvent) => {
-        if (transportId != null) {
-          if (event.data.transportId !== transportId) return;
-          const { message } = event.data;
-          handler(message);
-          return;
-        }
-        if (filter) {
-          if (!filter(event)) return;
-          handler(event.data);
-          return;
-        }
-        handler(event.data);
+        const message = event.data;
+        const [ignore, data] = rpcTransportMessageIn(message, {
+          transportId,
+          filter: () => filter?.(event),
+        });
+        if (ignore) return;
+        handler(data);
       };
-      messageEventTarget.addEventListener("message", transportHandler as any);
+      target.addEventListener("message", transportHandler);
     },
     unregisterHandler() {
       if (transportHandler)
-        messageEventTarget.removeEventListener(
-          "message",
-          transportHandler as any,
-        );
+        target.removeEventListener("message", transportHandler);
     },
   };
 }

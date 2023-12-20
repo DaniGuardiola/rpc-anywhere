@@ -3,7 +3,6 @@ import {
   type RPCMessageFromSchema,
   type RPCMessageHandlerFn,
   type RPCMessagePayload,
-  type RPCOptions,
   type RPCRequest,
   type RPCRequestFromSchema,
   type RPCRequestHandler,
@@ -27,6 +26,27 @@ function missingTransportMethodError(methods: string[], action: string) {
   );
 }
 
+export type _RPCOptions<Schema extends RPCSchema> = {
+  /**
+   * A transport object that will be used to send and receive
+   * messages. Setting the `send` function manually will override
+   * the transport's `send` function.
+   */
+  transport?: RPCTransport;
+
+  /**
+   * The function that will be used to handle requests.
+   */
+  requestHandler?: RPCRequestHandler<Schema["requests"]>;
+
+  /**
+   * The maximum time to wait for a response to a request, in
+   * milliseconds. If exceeded, the promise will be rejected.
+   * @default 1000
+   */
+  maxRequestTime?: number;
+};
+
 export function _createRPC<
   Schema extends RPCSchema = RPCSchema,
   RemoteSchema extends RPCSchema = Schema,
@@ -34,7 +54,7 @@ export function _createRPC<
   /**
    * The options that will be used to configure the RPC instance.
    */
-  options: RPCOptions<Schema> = {},
+  options: _RPCOptions<Schema> = {},
 ) {
   // setters
   // -------

@@ -17,7 +17,7 @@ export function createRPC<
   /**
    * The options that will be used to configure the RPC instance.
    */
-  options?: RPCOptions<Schema>,
+  options?: RPCOptions<Schema, RemoteSchema>,
 ): RPC<Schema, RemoteSchema> {
   return _createRPC<Schema, RemoteSchema>(options);
 }
@@ -30,7 +30,7 @@ export function createClientRPC<RemoteSchema extends RPCSchema = RPCSchema>(
   /**
    * The options that will be used to configure the RPC instance.
    */
-  options: RPCOptions<EmptyRPCSchema>,
+  options: RPCOptions<EmptyRPCSchema, RemoteSchema>,
 ): RPC<EmptyRPCSchema, RemoteSchema> {
   return _createRPC<EmptyRPCSchema, RemoteSchema>(options);
 }
@@ -43,7 +43,7 @@ export function createServerRPC<Schema extends RPCSchema = RPCSchema>(
   /**
    * The options that will be used to configure the RPC instance.
    */
-  options: RPCOptions<Schema>,
+  options: RPCOptions<Schema, EmptyRPCSchema>,
 ) {
   return _createRPC<Schema, EmptyRPCSchema>(options);
 }

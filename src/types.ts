@@ -1,7 +1,7 @@
 // data
 // ----
 
-import { type RPCInstance } from "./rpc.js";
+import { type _RPCOptions, type RPCInstance } from "./rpc.js";
 
 /**
  * A low-level RPC message representing a request.
@@ -367,7 +367,7 @@ export type EmptyRPCSchema = RPCSchema;
 // transports
 // ----------
 
-export type RPCTransportHandler = (message: any) => void;
+export type RPCTransportHandler = (data: any) => void;
 
 /**
  * A transport object that will be used to send and receive
@@ -378,7 +378,7 @@ export type RPCTransport = {
    * The function that will be used to send requests, responses,
    * and messages.
    */
-  send?: (message: any) => void;
+  send?: (data: any) => void;
   /**
    * The function that will be used to register a handler for
    * incoming requests, responses, and messages.
@@ -394,29 +394,36 @@ export type RPCTransport = {
 // options
 // -------
 
+type RPCBaseOption = "transport";
+type RPCRequestsInOption = "requestHandler";
+type RPCRequestsOutOption = "maxRequestTime";
+
+type OptionsByLocalSchema<Schema extends RPCSchema> =
+  NonNullable<unknown> extends Schema["requests"] ? never : RPCRequestsInOption;
+
+type OptionsByRemoteSchema<RemoteSchema extends RPCSchema> =
+  NonNullable<unknown> extends RemoteSchema["requests"]
+    ? never
+    : RPCRequestsOutOption;
+
 /**
- * Options for creating an RPC instance.
+ * Options for creating an RPC instance, tailored to a specific
+ * set of schemas. Options will be ommitted if they are not
+ * supported according to the schemas.
+ *
+ * For example, if the remote schema doesn't have a `requests`
+ * property, the `maxRequestTime` option will be omitted because
+ * the instance won't be able to send requests.
  */
-export type RPCOptions<Schema extends RPCSchema> = {
-  /**
-   * A transport object that will be used to send and receive
-   * messages. Setting the `send` function manually will override
-   * the transport's `send` function.
-   */
-  transport?: RPCTransport;
-
-  /**
-   * The function that will be used to handle requests.
-   */
-  requestHandler?: RPCRequestHandler<Schema["requests"]>;
-
-  /**
-   * The maximum time to wait for a response to a request, in
-   * milliseconds. If exceeded, the promise will be rejected.
-   * @default 1000
-   */
-  maxRequestTime?: number;
-};
+export type RPCOptions<
+  Schema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = Pick<
+  _RPCOptions<Schema>,
+  | RPCBaseOption
+  | OptionsByLocalSchema<Schema>
+  | OptionsByRemoteSchema<RemoteSchema>
+>;
 
 // rpc
 // ---
@@ -449,8 +456,8 @@ type MethodsByRemoteSchema<RemoteSchema extends RPCSchema> =
  * to the schemas.
  *
  * For example, if the remote schema doesn't have a `requests`
- * property, the `request` method will be omitted because it
- * won't be able to handle requests.
+ * property, the `request` method will be omitted because the
+ * instance won't be able to send requests.
  */
 export type RPC<
   Schema extends RPCSchema,
