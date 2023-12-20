@@ -4,7 +4,7 @@
 <br/>
 <div align="center">
 
-[![API reference](https://img.shields.io/badge/tsdocs-%23007EC6?style=flat&logo=typescript&logoColor=%23fff&label=API%20reference&labelColor=%23555555)](https://tsdocs.dev/docs/rpc-anywhere/) [![Bundle size](https://deno.bundlejs.com/?q=rpc-anywhere%40latest&treeshake=%5B%7B+RPC+%7D%5D&badge=detailed&badge-style=flat&badge-raster=false)](https://bundlejs.com/?q=rpc-anywhere%40latest&treeshake=%5B%7B+RPC+%7D%5D)
+[![API reference](https://img.shields.io/badge/tsdocs-%23007EC6?style=flat&logo=typescript&logoColor=%23fff&label=API%20reference&labelColor=%23555555)](https://tsdocs.dev/docs/rpc-anywhere/) [![Bundle size](https://deno.bundlejs.com/?q=rpc-anywhere%40latest&treeshake=%5B%7B+RPC+%7D%5D&badge=&badge-style=flat&badge-raster=false)](https://bundlejs.com/?q=rpc-anywhere%40latest&treeshake=%5B%7B+RPC+%7D%5D)
 
 </div>
 
@@ -87,14 +87,14 @@ It also ships with a few transports out of the box for common use cases.
 - Type-safe and well-tested.
 - Transport agnostic.
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy API (`rpc.request.methodName(params)`).
+- Promise-based with optional proxy API (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
 - Infers schema type from request handler.
 - Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
 - Ready-to-use transports:
   - Message ports: `window`, iframes, workers, broadcast channels, etc.
   - Web extensions: content scripts <-> service worker.
 
-**This package is ESM-only at the moment.** File an issue if this is problem for you.
+**This package is ESM-only at the moment.** File an issue if this is a problem for you.
 
 ## <a name='Gettingstarted'></a>Getting started
 

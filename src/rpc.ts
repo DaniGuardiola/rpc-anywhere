@@ -3,6 +3,7 @@ import {
   type RPCMessageFromSchema,
   type RPCMessageHandlerFn,
   type RPCMessagePayload,
+  type RPCMessagesProxy,
   type RPCRequest,
   type RPCRequestFromSchema,
   type RPCRequestHandler,
@@ -184,17 +185,16 @@ export function _createRPC<
   // messages
   // --------
 
-  /**
-   * Sends a message to the remote RPC endpoint.
-   */
-  function send<Message extends keyof Schema["messages"]>(
+  function sendFn<Message extends keyof Schema["messages"]>(
     /**
      * The name of the message to send.
      */
     message: Message,
     ...args: void extends RPCMessagePayload<Schema["messages"], Message>
       ? []
-      : [payload: RPCMessagePayload<Schema["messages"], Message>]
+      : undefined extends RPCMessagePayload<Schema["messages"], Message>
+        ? [payload?: RPCMessagePayload<Schema["messages"], Message>]
+        : [payload: RPCMessagePayload<Schema["messages"], Message>]
   ) {
     const payload = args[0];
     if (!transport.send)
@@ -206,6 +206,29 @@ export function _createRPC<
     };
     transport.send(rpcMessage);
   }
+
+  /**
+   * Sends a message to the remote RPC endpoint.
+   *
+   * It can also be used as a proxy to send messages by using the message
+   * name as a property name.
+   *
+   * @example
+   *
+   * ```js
+   * rpc.send("messageName", { content: "value" });
+   * // or
+   * rpc.send.messageName({ content: "value" });
+   * ```
+   */
+  const send = new Proxy(sendFn, {
+    get: (_, prop) => {
+      // @ts-expect-error Not very important.
+      return (payload: unknown) => sendFn(prop, payload);
+    },
+  }) as typeof sendFn & RPCMessagesProxy<Schema["messages"]>;
+
+  const sendProxy = send as RPCMessagesProxy<Schema["messages"]>;
 
   const messageListeners = new Map<any, Set<(payload: any) => void>>();
   const wildcardMessageListeners = new Set<
@@ -390,14 +413,24 @@ export function _createRPC<
     throw new Error(`Unexpected RPC message type: ${(message as any).type}`);
   }
 
+  // proxy
+  // -----
+
+  /**
+   * A proxy object that can be used to send requests and messages.
+   */
+  const proxy = { send: sendProxy, request: requestProxy };
+
   return {
     setTransport,
     setRequestHandler,
     request,
     requestProxy,
     send,
+    sendProxy,
     addMessageListener,
     removeMessageListener,
+    proxy,
   };
 }
 

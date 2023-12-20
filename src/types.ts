@@ -318,6 +318,19 @@ export type WildcardRPCMessageHandlerFn<
   payload: RPCMessagePayload<MessagesSchema>,
 ) => void;
 
+/**
+ * A message proxy that allows sending messages as methods.
+ */
+export type RPCMessagesProxy<MessagesSchema extends RPCMessagesSchema> = {
+  [K in keyof MessagesSchema]-?: (
+    ...args: void extends MessagesSchema[K]
+      ? []
+      : undefined extends MessagesSchema[K]
+        ? [payload?: MessagesSchema[K]]
+        : [payload: MessagesSchema[K]]
+  ) => void;
+};
+
 // schema
 // ------
 
@@ -432,7 +445,8 @@ type RPCMethods = "setTransport";
 type RPCRequestsInMethod = "setRequestHandler";
 type RPCRequestsOutMethod = "request" | "requestProxy";
 type RPCMessagesInMethod = "addMessageListener" | "removeMessageListener";
-type RPCMessagesOutMethod = "send";
+type RPCMessagesOutMethod = "send" | "sendProxy";
+type RPCRequestsOutMessagesOutMethod = "proxy";
 
 type MethodsByLocalSchema<Schema extends RPCSchema> =
   | (NonNullable<unknown> extends Schema["requests"]
@@ -449,6 +463,14 @@ type MethodsByRemoteSchema<RemoteSchema extends RPCSchema> =
   | (NonNullable<unknown> extends RemoteSchema["messages"]
       ? never
       : RPCMessagesInMethod);
+type MethodsByRemoteSchemaAndLocalSchema<
+  LocalSchema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = NonNullable<unknown> extends LocalSchema["messages"]
+  ? never
+  : NonNullable<unknown> extends RemoteSchema["requests"]
+    ? never
+    : RPCRequestsOutMessagesOutMethod;
 
 /**
  * An RPC instance type, tailored to a specific set of schemas.
@@ -467,4 +489,5 @@ export type RPC<
   | RPCMethods
   | MethodsByLocalSchema<Schema>
   | MethodsByRemoteSchema<RemoteSchema>
+  | MethodsByRemoteSchemaAndLocalSchema<Schema, RemoteSchema>
 >;

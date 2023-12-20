@@ -116,6 +116,46 @@ test("messages are sent and received correctly", async () => {
   expect(received2).toBe(2);
 });
 
+test("send proxy sends messages correctly", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+  let received1 = 0;
+  let received2 = 0;
+  const listener: RPCMessageHandlerFn<Schema2["messages"], "message2"> = (
+    payload,
+  ) => {
+    expect(payload).toBe("second");
+    received2++;
+  };
+  rpc1.addMessageListener("message2", listener);
+  rpc2.addMessageListener("message1", (payload) => {
+    expect(payload).toBe("first");
+    received1++;
+  });
+
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(1);
+  expect(received2).toBe(1);
+
+  rpc1.removeMessageListener("message2", listener);
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(2);
+  expect(received2).toBe(1);
+
+  rpc1.addMessageListener("message2", listener);
+  rpc1.send.message1("first");
+  rpc2.send.message2("second");
+  rpc2.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(3);
+  expect(received2).toBe(2);
+});
+
 test("wildcard message handler works", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   let receivedCount = 0;
