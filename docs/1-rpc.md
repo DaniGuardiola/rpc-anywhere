@@ -11,13 +11,14 @@
 
 <h1>RPC</h1>
 
+Before reading this documentation, it is recommended to read [the Getting started section of the README](../README.md#getting-started).
+
 <h3>Table of contents</h3>
 
 <!-- vscode-markdown-toc -->
 
 - [RPC schemas](#rpc-schemas)
 - [Transports](#transports)
-- [Transport bridges](#transport-bridges)
 - [Requests](#requests)
   - [Making requests](#making-requests)
   - [The request proxy API](#the-request-proxy-api)
@@ -166,54 +167,26 @@ In this case, the passed schema will be interpreted as both the local and remote
 
 ## <a name='Transports'></a>Transports
 
-Using a built-in transport (more about them below) is strongly recommended if possible. If you can't find one that fits your use case, you're in charge of creating it and connecting the RPC instances to it.
+An RPC transport is the channel through which messages are sent and received between point A and point B. In RPC Anywhere, a transport is an object that contains the specific logic to accomplish this.
 
-An RPC transport is the channel through which messages are sent and received between point A and point B. This looks different in every context, but the requirements to hook it up to an RPC instance are simple:
+Using a built-in transport is **strongly recommended**. You can learn about them in the [Built-in transports](./2-built-in-transports.md) page.
 
-- Provide a `send` function that takes an arbitrary message and sends it to the other endpoint.
-- Provide a `registerHandler` method that takes a callback and calls it whenever a message is received from the other endpoint.
-- Provide an `unregisterHandler` method that removes or deactivates the previously set handler. This might be necessary if the transport is updated at runtime (through `rpc.setTransport(transport)`), as it is called to clean up before registering the new handler.
+If you can't find one that fits your use case, you can create one yourself. Learn how in the [Creating a custom transport](./4-creating-a-custom-transport.md) page.
 
-The transport can be provided in the `RPC` options, or lazily set at a later time using the `setTransport` method. For example:
+To provide a transport to an RPC instance pass it as the `transport` option, or lazily set at a later time using the `setTransport` method. For example:
 
 ```ts
 const rpc = createRPC<Schema>({
-  transport: {
-    send(message) {
-      // send the message
-    },
-    registerHandler(handler) {
-      // register the handler
-    },
-    unregisterHandler() {
-      // unregister the handler
-    },
-  },
+  transport: createTransportFromMessagePort(iframeElement.contentWindow),
 });
 
 // or
 
 const rpc = createRPC<Schema>();
-rpc.setTransport({
-  send(message) {
-    // send the message
-  },
-  registerHandler(handler) {
-    // register the handler
-  },
-  unregisterHandler() {
-    // unregister the handler
-  },
-});
+rpc.setTransport(createTransportFromMessagePort(iframeElement.contentWindow));
 ```
 
-All three transport methods are optional. Omitting `unregisterHandler` is fine if the transport doesn't need to be updated at runtime. However, if `send` or `registerHandler` are missing, the RPC will fail when attempting to send or receive messages, respectively.
-
-While uncommon, this might be acceptable for certain use cases, such as unidirectional RPCs that only send messages in one direction (in that case, there is no need for the ability to send messages in the opposite direction).
-
-## <a name='Transportbridges'></a>Transport bridges
-
-TODO: section.
+Keep in mind that if the transport is set lazily, the RPC instance will be unusable until it is set.
 
 ## <a name='Requests'></a>Requests
 

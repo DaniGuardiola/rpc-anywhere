@@ -13,7 +13,7 @@
 
 RPC Anywhere ships with a few built-in ways to create transports for common use cases.
 
-For example, a transport for web extensions (content scripts <-> service worker) can be created with `createTransportFromBrowserRuntimePort`. As the name implies, it uses a `Browser.Runtime.Port` object to send and receive messages. You can see a full example below.
+For example, a transport for web extensions (content scripts <-> service worker) can be created with `createTransportFromBrowserRuntimePort(port)`. As the name implies, it uses a `Browser.Runtime.Port` object to send and receive messages. You can see a full example below.
 
 A full list of built-in transports can be found below.
 
