@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.3.1
+
+### Patch Changes
+
+- 4058d02: Fix: better browser runtime port transport port type.
+
 ## 1.3.0
 
 ### Minor Changes
