@@ -245,11 +245,17 @@ TODO: section.
 
 ## <a name='Featuresunderconsideration'></a>Features under consideration
 
-- Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler. Thoughts:
-  - Likely possible to allow type discrimination by passing an object instead of separate parameters.
-  - Is it possible to provide type safety for the return value at all?
-  - In the fallback handler, is it possible to "filter out" the already declared methods?
-- A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport. To make this type-safe with nice inference, [partial type argument inference](https://github.com/microsoft/TypeScript/issues/26242) would be nice.
+If you need any of these, please [file a feature request](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml) or upvote an existing one! 😄
+
+- Transport: Electron ipcMain/ipcRenderer.
+- Transport: WebSockets.
+- Transport: WebRTC.
+- Transport: localStorage events (across two opened tabs of the same website).
+- Transport: HTTP(S) requests.
+- Transport: UDP.
+- Many-to-one or many-to-many connections.
+- Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler.
+- A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport.
 - [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art

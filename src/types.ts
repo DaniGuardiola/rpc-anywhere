@@ -191,7 +191,7 @@ export type RPCRequestHandlerObject<
      */
     params: RPCRequestParams<RequestsSchema>,
   ) => any;
-  // TODO: this return type causes some problems
+  // TODO: this return type causes some problems.
   // | RPCRequestResponse<RequestsSchema>
   // | Promise<RPCRequestResponse<RequestsSchema>>;
 };
@@ -319,7 +319,7 @@ export type WildcardRPCMessageHandlerFn<
 ) => void;
 
 /**
- * A message proxy that allows sending messages as methods.
+ * A message proxy that allows sending messages through methods.
  */
 export type RPCMessagesProxy<MessagesSchema extends RPCMessagesSchema> = {
   [K in keyof MessagesSchema]-?: (

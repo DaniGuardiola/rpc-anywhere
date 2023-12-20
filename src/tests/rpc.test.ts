@@ -191,3 +191,5 @@ test("wildcard message handler works", async () => {
   expect(lastNameReceived).toBe("message3");
   expect(lastPayloadReceived).toBe("third");
 });
+
+// TODO: find a way to run these tests with all actual transports too.

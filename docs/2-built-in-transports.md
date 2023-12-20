@@ -22,7 +22,7 @@ A full list of built-in transports can be found below.
 <!-- vscode-markdown-toc -->
 
 - [Iframes, service workers, broadcast channels... (message ports)](#iframes-service-workers-broadcast-channels-message-ports)
-- [Web extensions transport](#web-extensions-transport)
+- [Web extensions](#web-extensions)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -34,7 +34,7 @@ A full list of built-in transports can be found below.
 
 TODO: section.
 
-## <a name='Webextensionstransport'></a>Web extensions transport
+## <a name='Webextensions'></a>Web extensions
 
 ```ts
 function createTransportFromBrowserRuntimePort(
