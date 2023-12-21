@@ -16,9 +16,9 @@ npm i rpc-anywhere
 
 ---
 
-RPC Anywhere lets you create RPCs in **any** context, as long as you can provide the transport layer. In other words: a way for messages to get from point A to point B and vice-versa.
+RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer is provided. In other words: a way for messages to get from point A to point B and vice-versa.
 
-It also ships with a few transports out of the box for common use cases.
+It also ships with a few transports: iframes, Electron, browser extensions, service workers...
 
 <details>
 <summary><b>What is an RPC?</b></summary>
@@ -54,7 +54,7 @@ It also ships with a few transports out of the box for common use cases.
 >
 > In fact, you can replace the transport layer at any time, and the RPC will keep working exactly the same way (except that messages will travel through different means).
 >
-> RPC Anywhere manages to be flexible and simple without sacrificing robust type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint.
+> RPC Anywhere manages to be flexible and simple without sacrificing robust type safety or ergonomics. It's also well-tested and packs a lot of features in a very small footprint (~1kb gzipped).
 >
 > If you're missing a feature, feel free to [file a feature request](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)! The goal is to make RPC Anywhere the best RPC library out there.
 
@@ -84,15 +84,14 @@ It also ships with a few transports out of the box for common use cases.
 
 ## <a name='Features'></a>Features
 
-- Type-safe and well-tested.
-- Transport agnostic.
+- Type-safe and extensively tested.
+- Transport agnostic, with ready-to-use transports:
+  - Message ports: `window`, iframes, workers, broadcast channels, etc.
+  - Browser extensions: content scripts <-> service worker.
 - Flexible (no enforced client-server architecture).
 - Promise-based with optional proxy API (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
 - Infers schema type from request handler.
 - Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
-- Ready-to-use transports:
-  - Message ports: `window`, iframes, workers, broadcast channels, etc.
-  - Web extensions: content scripts <-> service worker.
 
 **This package is ESM-only at the moment.** File an issue if this is a problem for you.
 
@@ -151,22 +150,18 @@ import { createRPC } from "rpc-anywhere";
 
 // chef-rpc.ts
 const chefRpc = createRPC<ChefSchema, WorkerSchema>({
-  transport: {
-    send: (message) => sendToWorker(message),
-    registerHandler: (handler) => onWorkerMessage(handler),
+  transport: createRestaurantTransport(),
 });
 
 // worker-rpc.ts
 const workerRpc = createRPC<WorkerSchema, ChefSchema>({
-  transport: {
-    send: (message) => sendToChef(message),
-    registerHandler: (handler) => onChefMessage(handler),
+  transport: createRestaurantTransport(),
 });
 ```
 
-Schema types are passed as type parameters to `RPC`. Note how the first one is the schema of the RPC being created, and the second one is the schema of the RPC on the other endpoint (a.k.a. the "remote" schema). This is why the order of the type parameters in the example is different for each endpoint.
+Schema types are passed as type parameters to `RPC`. The first one is the schema of the RPC being created, and the second one is the schema of the RPC on the other endpoint (the "remote" schema).
 
-RPC Anywhere is transport-agnostic: you need to "teach" it how to communicate by giving it ways to send and listen for messages for the other endpoint. A common real-world example is communicating with an iframe through `iframeWindow.postMessage()` and `window.addEventListener('message', handler)`.
+RPC Anywhere is transport-agnostic: you need to specify it. A transport provides the means to send and listen for messages for the other endpoint. A common real-world example is communicating with an iframe through `window.postMessage(message)` and `window.addEventListener('message', handler)`.
 
 ### <a name='Messages'></a>Messages
 
@@ -185,7 +180,7 @@ The worker can then send a message to the chef:
 
 ```ts
 // worker-rpc.ts
-workerRpc.send("takingABreak", { duration: 30, reason: "lunch" });
+workerRpc.send.takingABreak({ duration: 30, reason: "lunch" });
 ```
 
 When the chef receives the message, the listener will be called, and the following will be logged:
@@ -230,7 +225,9 @@ Both are functionally equivalent.
 
 ## <a name='Documentation'></a>Documentation
 
-Read the documentation:
+The documentation contains important details that are skipped or overly simplified in the examples above!
+
+Start with [RPC](./docs/1-rpc.md), then read about your transport of choice on the [Built-in transports](./docs/2-built-in-transports.md) page.
 
 - [RPC](./docs/1-rpc.md)
 - [Built-in transports](./docs/2-built-in-transports.md)

@@ -31,7 +31,7 @@ export type RPCBrowserRuntimePortTransportOptions = Pick<
 
 /**
  * Creates a transport from a browser runtime port. Useful for RPCs
- * between content scripts and service workers in web extensions.
+ * between content scripts and service workers in browser extensions.
  */
 export function createTransportFromBrowserRuntimePort(
   port: Port,

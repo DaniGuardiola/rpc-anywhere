@@ -13,7 +13,7 @@
 
 RPC Anywhere ships with a few built-in ways to create transports for common use cases.
 
-For example, a transport for web extensions (content scripts <-> service worker) can be created with `createTransportFromBrowserRuntimePort(port)`. As the name implies, it uses a `Browser.Runtime.Port` object to send and receive messages. You can see a full example below.
+For example, a transport for browser extensions (content scripts <-> service worker) can be created with `createTransportFromBrowserRuntimePort(port)`. As the name implies, it uses a `Browser.Runtime.Port` object to send and receive messages. You can see a full example below.
 
 A full list of built-in transports can be found below.
 
@@ -22,7 +22,7 @@ A full list of built-in transports can be found below.
 <!-- vscode-markdown-toc -->
 
 - [Iframes, service workers, broadcast channels... (message ports)](#iframes-service-workers-broadcast-channels-message-ports)
-- [Web extensions](#web-extensions)
+- [Browser extensions](#browser-extensions)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -34,7 +34,7 @@ A full list of built-in transports can be found below.
 
 TODO: section.
 
-## <a name='Webextensions'></a>Web extensions
+## <a name='Browserextensions'></a>Browser extensions
 
 ```ts
 function createTransportFromBrowserRuntimePort(
