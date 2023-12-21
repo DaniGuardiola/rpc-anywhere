@@ -81,6 +81,8 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
+---
+
 ## <a name='Features'></a>Features
 
 - Type-safe and extensively tested.
