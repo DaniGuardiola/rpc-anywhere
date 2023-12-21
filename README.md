@@ -92,7 +92,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
 - Flexible (no enforced client-server architecture).
 - Promise-based with optional proxy APIs (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
 - Infers schema type from runtime request handlers.
-- Optional lazy initialization (e.g. `rpc.setTransport(transport)`)
+- Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
 
 ## <a name='Gettingstarted'></a>Getting started
 
