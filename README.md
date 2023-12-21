@@ -60,11 +60,10 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
 
 </details>
 
-## <a name='Contents'></a>Contents
+---
 
 <!-- vscode-markdown-toc -->
 
-- [Contents](#contents)
 - [Features](#features)
 - [Getting started](#getting-started)
   - [Schemas](#schemas)
@@ -89,11 +88,9 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
   - Message ports: `window`, iframes, workers, broadcast channels, etc.
   - Browser extensions: content scripts <-> service worker.
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy API (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
-- Infers schema type from request handler.
-- Lazy transport initialization (e.g. `rpc.setTransport(transport)`)
-
-**This package is ESM-only at the moment.** File an issue if this is a problem for you.
+- Promise-based with optional proxy APIs (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
+- Infers schema type from runtime request handlers.
+- Optional lazy initialization (e.g. `rpc.setTransport(transport)`)
 
 ## <a name='Gettingstarted'></a>Getting started
 
@@ -236,6 +233,8 @@ Start with [RPC](./docs/1-rpc.md), then read about your transport of choice on t
 
 The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywhere/).
 
+**This package is ESM-only at the moment.** File an issue if this is a problem for you.
+
 ## <a name='Typesafetyfeatures'></a>Type safety and features
 
 TODO: section.
@@ -257,4 +256,8 @@ If you need any of these, please [file a feature request](https://github.com/Dan
 
 ## <a name='Priorart'></a>Prior art
 
-RPC Anywhere is inspired by JSON-RPC, with a few small differences. For example, the concept of "messages" in RPC Anywhere resembles "notifications" in JSON-RPC. Some implementation details (like using an `id` property in requests and responses) are also similar.
+RPC Anywhere is inspired by [JSON-RPC](https://www.jsonrpc.org/), with a few small differences.
+
+For example, the concept of "messages" in RPC Anywhere resembles "notifications" in JSON-RPC. Some implementation details (like using an `id` property in requests and responses) are also similar.
+
+A notable difference is that RPC Anywhere is completely flexible, while JSON-RPC is client-server oriented.
