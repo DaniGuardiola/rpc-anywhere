@@ -38,8 +38,6 @@ export type ParentSchema = RPCSchema<
   typeof requestHandler
 >;
 
-console.log({ thing: iframeEl.contentWindow });
-
 function waitForFrameLoad(frame: HTMLIFrameElement) {
   if (frame.contentWindow?.document.readyState === "complete")
     return Promise.resolve();
