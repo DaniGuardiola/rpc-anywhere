@@ -1,0 +1,114 @@
+<!doctype html>
+<html class="overflow-hidden">
+  <head>
+    <title>RPC Anywhere demo - iframe</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-blue-200">
+    <div id="sizer" class="p-4 space-y-4">
+      <input
+        id="synced-input"
+        type="text"
+        class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+        placeholder="Synced input"
+        value="This input is synced!"
+      />
+      <button
+        id="colored-button"
+        data-color="red"
+        class="px-4 py-2 bg-red-500 text-white font-bold rounded"
+      >
+        Click to change the color of this button!
+      </button>
+      <p><span class="font-bold">Story time!</span> Fill in the blanks:</p>
+
+      <div class="flex gap-4">
+        <input
+          id="story-village-name-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Village name"
+          value="Whispering Meadows"
+        />
+        <input
+          id="story-animal-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Animal"
+          value="curious rabbit"
+        />
+      </div>
+
+      <div class="flex gap-4">
+        <input
+          id="story-name-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Name"
+          value="Benny"
+        />
+        <input
+          id="story-activity-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Activity"
+          value="explore"
+        />
+      </div>
+
+      <div class="flex gap-4">
+        <input
+          id="story-landmark-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Landmark"
+          value="Old Oak Tree"
+        />
+        <input
+          id="story-object-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Object"
+          value="enchanted compass"
+        />
+      </div>
+
+      <div class="flex gap-4">
+        <input
+          id="story-superpower-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="Superpower"
+          value="time travel"
+        />
+        <input
+          id="story-new-title-input"
+          type="text"
+          class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+          placeholder="New heroic title"
+          value="Guardian of the Meadows"
+        />
+      </div>
+
+      <button
+        id="story-button"
+        class="px-4 py-2 bg-blue-500 text-white font-bold rounded"
+      >
+        Tell me a story!
+      </button>
+      <p id="story-result" style="display: none">
+        The story "<span id="story-title" class="font-bold"></span>" has been
+        created!
+      </p>
+    </div>
+    <script type="module" src="iframe.js"></script>
+  </body>
+</html>

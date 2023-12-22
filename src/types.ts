@@ -6,7 +6,7 @@ import { type _RPCOptions, type RPCInstance } from "./rpc.js";
 /**
  * A low-level RPC message representing a request.
  */
-export type RPCRequest<Method = any, Params = any> = {
+export type _RPCRequestPacket<Method = any, Params = any> = {
   /**
    * The type of the message.
    */
@@ -28,7 +28,7 @@ export type RPCRequest<Method = any, Params = any> = {
 /**
  * A low-level RPC message representing a response.
  */
-export type RPCResponse<Payload = any> =
+export type _RPCResponsePacket<Payload = any> =
   | {
       /**
        * The type of the message.
@@ -69,7 +69,7 @@ export type RPCResponse<Payload = any> =
 /**
  * A low-level RPC message representing a message.
  */
-export type RPCMessage<Payload = any> = {
+export type _RPCMessagePacket<Payload = any> = {
   /**
    * The type of the message.
    */
@@ -83,6 +83,14 @@ export type RPCMessage<Payload = any> = {
    */
   payload: Payload;
 };
+
+/**
+ * A low-level RPC message.
+ */
+export type _RPCPacket =
+  | _RPCRequestPacket
+  | _RPCResponsePacket
+  | _RPCMessagePacket;
 
 // requests
 // --------
@@ -128,20 +136,20 @@ export type RPCRequestResponse<
  * for that method. Otherwise, it will return a union of messages
  * for all methods.
  */
-export type RPCRequestFromSchema<
+export type _RPCRequestPacketFromSchema<
   RequestsSchema extends RPCRequestsSchema,
   Method extends keyof RequestsSchema = keyof RequestsSchema,
-> = RPCRequest<Method, RPCRequestParams<RequestsSchema, Method>>;
+> = _RPCRequestPacket<Method, RPCRequestParams<RequestsSchema, Method>>;
 /**
  * A utility type for getting the response low-level message from
  * a schema. If a method is provided, it will return the message
  * for that method. Otherwise, it will return a union of messages
  * for all methods.
  */
-export type RPCResponseFromSchema<
+export type _RPCResponsePacketFromSchema<
   RequestsSchema extends RPCRequestsSchema,
   Method extends keyof RequestsSchema = keyof RequestsSchema,
-> = RPCResponse<RPCRequestResponse<RequestsSchema, Method>>;
+> = _RPCResponsePacket<RPCRequestResponse<RequestsSchema, Method>>;
 
 /**
  * A request handler in "function" form.
@@ -296,10 +304,10 @@ export type RPCMessagePayload<
  * message for that message. Otherwise, it will return a union
  * of messages for all messages.
  */
-export type RPCMessageFromSchema<
+export type _RPCMessagePacketFromSchema<
   MessagesSchema extends RPCMessagesSchema,
   MessageName extends keyof MessagesSchema = keyof MessagesSchema,
-> = RPCMessage<RPCMessagePayload<MessagesSchema, MessageName>>;
+> = _RPCMessagePacket<RPCMessagePayload<MessagesSchema, MessageName>>;
 
 /**
  * A message handler for a specific message.
@@ -407,7 +415,7 @@ export type RPCTransport = {
 // options
 // -------
 
-type RPCBaseOption = "transport";
+type RPCBaseOption = "transport" | "_debugHooks";
 type RPCRequestsInOption = "requestHandler";
 type RPCRequestsOutOption = "maxRequestTime";
 
@@ -441,7 +449,7 @@ export type RPCOptions<
 // rpc
 // ---
 
-type RPCMethods = "setTransport";
+type RPCMethod = "setTransport";
 type RPCRequestsInMethod = "setRequestHandler";
 type RPCRequestsOutMethod = "request" | "requestProxy";
 type RPCMessagesInMethod = "addMessageListener" | "removeMessageListener";
@@ -486,7 +494,7 @@ export type RPC<
   RemoteSchema extends RPCSchema,
 > = Pick<
   RPCInstance<Schema, RemoteSchema>,
-  | RPCMethods
+  | RPCMethod
   | MethodsByLocalSchema<Schema>
   | MethodsByRemoteSchema<RemoteSchema>
   | MethodsByRemoteSchemaAndLocalSchema<Schema, RemoteSchema>

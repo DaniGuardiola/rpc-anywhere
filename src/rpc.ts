@@ -1,17 +1,18 @@
 import {
-  type RPCMessage,
-  type RPCMessageFromSchema,
+  type _RPCMessagePacket,
+  type _RPCMessagePacketFromSchema,
+  type _RPCPacket,
+  type _RPCRequestPacket,
+  type _RPCRequestPacketFromSchema,
+  type _RPCResponsePacket,
+  type _RPCResponsePacketFromSchema,
   type RPCMessageHandlerFn,
   type RPCMessagePayload,
   type RPCMessagesProxy,
-  type RPCRequest,
-  type RPCRequestFromSchema,
   type RPCRequestHandler,
   type RPCRequestHandlerFn,
   type RPCRequestResponse,
   type RPCRequestsProxy,
-  type RPCResponse,
-  type RPCResponseFromSchema,
   type RPCSchema,
   type RPCTransport,
   type WildcardRPCMessageHandlerFn,
@@ -26,6 +27,20 @@ function missingTransportMethodError(methods: string[], action: string) {
     `This RPC instance cannot ${action} because the transport did not provide one or more of these methods: ${methodsString}`,
   );
 }
+
+type DebugHooks = {
+  /**
+   * A function that will be called when the RPC sends a low-level
+   * message.
+   */
+  onSend?: (packet: _RPCPacket) => void;
+
+  /**
+   * A function that will be called when the RPC receives a low-level
+   * message.
+   */
+  onReceive?: (packet: _RPCPacket) => void;
+};
 
 export type _RPCOptions<Schema extends RPCSchema> = {
   /**
@@ -46,6 +61,13 @@ export type _RPCOptions<Schema extends RPCSchema> = {
    * @default 1000
    */
   maxRequestTime?: number;
+
+  /**
+   * A collection of optional functions that will be called when
+   * the RPC sends or receives a low-level message. Useful for
+   * debugging and logging.
+   */
+  _debugHooks?: DebugHooks;
 };
 
 export function _createRPC<
@@ -59,6 +81,15 @@ export function _createRPC<
 ) {
   // setters
   // -------
+
+  let debugHooks: DebugHooks = {};
+
+  /**
+   * Sets the debug hooks that will be used to debug the RPC instance.
+   */
+  function _setDebugHooks(newDebugHooks: DebugHooks) {
+    debugHooks = newDebugHooks;
+  }
 
   let transport: RPCTransport = {};
 
@@ -107,6 +138,7 @@ export function _createRPC<
   const { maxRequestTime = DEFAULT_MAX_REQUEST_TIME } = options;
   if (options.transport) setTransport(options.transport);
   if (options.requestHandler) setRequestHandler(options.requestHandler);
+  if (options._debugHooks) _setDebugHooks(options._debugHooks);
 
   // requests
   // --------
@@ -139,7 +171,7 @@ export function _createRPC<
       if (!transport.send)
         throw missingTransportMethodError(["send"], "make requests");
       const requestId = getRequestId();
-      const request: RPCRequest = {
+      const request: _RPCRequestPacket = {
         type: "request",
         id: requestId,
         method,
@@ -154,6 +186,7 @@ export function _createRPC<
             reject(new Error("RPC request timed out."));
           }, maxRequestTime),
         );
+      debugHooks.onSend?.(request);
       transport.send(request);
     }) as Promise<any>;
   }
@@ -200,11 +233,12 @@ export function _createRPC<
     const payload = args[0];
     if (!transport.send)
       throw missingTransportMethodError(["send"], "send messages");
-    const rpcMessage: RPCMessage = {
+    const rpcMessage: _RPCMessagePacket = {
       type: "message",
       id: message as string,
       payload,
     };
+    debugHooks.onSend?.(rpcMessage);
     transport.send(rpcMessage);
   }
 
@@ -363,10 +397,11 @@ export function _createRPC<
 
   async function handler(
     message:
-      | RPCRequestFromSchema<Schema["requests"]>
-      | RPCResponseFromSchema<RemoteSchema["requests"]>
-      | RPCMessageFromSchema<RemoteSchema["messages"]>,
+      | _RPCRequestPacketFromSchema<Schema["requests"]>
+      | _RPCResponsePacketFromSchema<RemoteSchema["requests"]>
+      | _RPCMessagePacketFromSchema<RemoteSchema["messages"]>,
   ) {
+    debugHooks.onReceive?.(message);
     if (!("type" in message))
       throw new Error("Message does not contain a type.");
     if (message.type === "request") {
@@ -376,7 +411,7 @@ export function _createRPC<
           "handle requests",
         );
       const { id, method, params } = message;
-      let response: RPCResponse;
+      let response: _RPCResponsePacket;
       try {
         response = {
           type: "response",
@@ -393,6 +428,7 @@ export function _createRPC<
           error: error.message,
         };
       }
+      debugHooks.onSend?.(response);
       transport.send(response);
       return;
     }
@@ -433,6 +469,7 @@ export function _createRPC<
     addMessageListener,
     removeMessageListener,
     proxy,
+    _setDebugHooks,
   };
 }
 

@@ -34,7 +34,13 @@ export type RPCBrowserRuntimePortTransportOptions = Pick<
  * between content scripts and service workers in browser extensions.
  */
 export function createTransportFromBrowserRuntimePort(
+  /**
+   * The browser runtime port.
+   */
   port: Port,
+  /**
+   * Options for the browser runtime port transport.
+   */
   options: RPCBrowserRuntimePortTransportOptions = {},
 ): RPCTransport {
   const { transportId, filter } = options;

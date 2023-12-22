@@ -1,3 +1,5 @@
+const transportIdKey = "[transport-id]";
+
 /**
  * Common options for a transport.
  */
@@ -25,7 +27,7 @@ export function rpcTransportMessageOut(
   options: Pick<RPCTransportOptions, "transportId">,
 ) {
   const { transportId } = options;
-  if (transportId != null) return { transportId, data };
+  if (transportId != null) return { [transportIdKey]: transportId, data };
   return data;
 }
 
@@ -46,7 +48,7 @@ export function rpcTransportMessageIn(
 
   let data = message;
   if (transportId) {
-    if (message.transportId !== transportId) return [true];
+    if (message[transportIdKey] !== transportId) return [true];
     data = message.data;
   }
   if (filterResult === false) return [true];

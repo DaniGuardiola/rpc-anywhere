@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>RPC Anywhere demo - parent</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Monoton&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="bg-yellow-200">
+    <div
+      class="flex flex-col lg:flex-row gap-4 lg:gap-16 p-8 max-w-[40rem] lg:max-w-[64rem] mx-auto"
+    >
+      <div class="grow space-y-8">
+        <h1
+          class="bg-slate-900 rounded px-4 py-2 text-white max-w-fit flex items-baseline gap-2 sm:gap-4 max-lg:mx-auto overflow-hidden"
+        >
+          <span class="font-extrabold text-3xl sm:text-5xl lg:text-6xl"
+            >RPC
+          </span>
+          <span
+            class="text-2xl sm:text-4xl lg:text-5xl text-fuchsia-500 font-[Monoton]"
+            >Anywhere</span
+          >
+        </h1>
+        <div class="space-y-4 px-4">
+          <p>
+            <a
+              class="underline hover:decoration-2"
+              href="https://github.com/DaniGuardiola/rpc-anywhere"
+              target="_blank"
+              rel="noreferrer"
+              >RPC Anywhere</a
+            >
+            lets you create type-safe RPCs.
+          </p>
+          <p
+            class="bg-slate-900/80 rounded px-4 py-2 text-white font-mono -mx-4"
+          >
+            $ bun add rpc-anywhere
+          </p>
+          <p>
+            This is a demo of an RPC between this page ("parent") and a child
+            iframe. Read the code:
+            <a
+              class="underline hover:decoration-2"
+              href="https://github.com/DaniGuardiola/rpc-anywhere/blob/main/demo/parent.ts"
+              target="_blank"
+              rel="noreferrer"
+              >parent.ts</a
+            >
+            and
+            <a
+              class="underline hover:decoration-2"
+              href="https://github.com/DaniGuardiola/rpc-anywhere/blob/main/demo/iframe.ts"
+              target="_blank"
+              rel="noreferrer"
+              >iframe.ts</a
+            >.
+          </p>
+          <p>
+            RPC Anywhere is transport agnostic, and is not limited to iframes.
+            It works for Electron IPC, Web Workers, browser extension content
+            scripts... Anything!
+            <a
+              class="underline hover:decoration-2"
+              href="https://github.com/DaniGuardiola/rpc-anywhere/"
+              target="_blank"
+              rel="noreferrer"
+              >Learn more.</a
+            >
+          </p>
+          <hr class="border-black/10 -mx-4" />
+          <p class="text-center font-bold">parent</p>
+          <div
+            id="controls"
+            class="rounded bg-white shadow p-4 -mx-4 opacity-60 pointer-events-none transition-opacity duration-500 flex flex-col gap-y-4"
+          >
+            <p class="font-mono" id="ready" style="display: none">
+              > The iframe RPC is ready!
+            </p>
+            <p class="font-mono" id="loading">
+              Waiting for the iframe to load...
+            </p>
+            <input
+              id="synced-input"
+              type="text"
+              class="w-full rounded px-2 py-1 ring-2 ring-slate-900/20 focus:outline-none focus:ring-blue-500"
+              placeholder="Synced input"
+              value="This input is synced!"
+            />
+            <div class="flex items-center gap-4">
+              <p>The button is <span id="button-color">red</span>.</p>
+              <button
+                id="update-colored-button"
+                class="px-2 py-1 bg-slate-500 text-white font-bold rounded"
+              >
+                &#x27f3; Get color
+              </button>
+            </div>
+            <div
+              id="story"
+              style="display: none"
+              class="space-y-4 bg-slate-50 p-4 -mx-4"
+            >
+              <p class="font-bold text-xl">
+                The Tale of
+                <span class="story-name font-bold text-green-500">[Name]</span>,
+                the
+                <span class="story-new-title font-bold text-amber-500"
+                  >[New Title]</span
+                >
+                of
+                <span class="story-village-name font-bold text-blue-500"
+                  >[Village Name]</span
+                >
+              </p>
+
+              <p>
+                Once in a small village named
+                <span class="story-village-name font-bold text-blue-500"
+                  >[Village Name]</span
+                >, there was a young
+                <span class="story-animal font-bold text-red-500"
+                  >[Animal]</span
+                >
+                named
+                <span class="story-name font-bold text-green-500">[Name]</span>.
+                Every morning,
+                <span class="story-name font-bold text-green-500">[Name]</span>
+                would go out to
+                <span class="story-activity font-bold text-purple-500"
+                  >[Activity]</span
+                >
+                near the village's famous
+                <span class="story-landmark font-bold text-orange-500"
+                  >[Landmark]</span
+                >.
+              </p>
+              <p>
+                One day,
+                <span class="story-name font-bold text-green-500">[Name]</span>
+                stumbled upon a mysterious
+                <span class="story-object font-bold text-teal-500"
+                  >[Object]</span
+                >. It was said that this
+                <span class="story-object font-bold text-teal-500"
+                  >[Object]</span
+                >
+                had the power to
+                <span class="story-superpower font-bold text-indigo-500"
+                  >[Superpower]</span
+                >. Excited,
+                <span class="story-name font-bold text-green-500">[Name]</span>
+                decided to use it to help the village.
+              </p>
+              <p>
+                In the end,
+                <span class="story-name font-bold text-green-500">[Name]</span>
+                became known as
+                <span class="story-new-title font-bold text-amber-500"
+                  >[New Title]</span
+                >, a hero who used the
+                <span class="story-object font-bold text-teal-500"
+                  >[Object]</span
+                >
+                to bring joy and wonder to everyone in
+                <span class="story-village-name font-bold text-blue-500"
+                  >[Village Name]</span
+                >.
+              </p>
+            </div>
+          </div>
+          <hr class="border-black/10 -mx-4" />
+          <p class="text-center font-bold">iframe</p>
+          <div class="-mx-4">
+            <iframe
+              id="iframe"
+              class="w-full border-2 border-black rounded border-dashed bg-blue-200"
+              style="height: 4rem"
+              src="/iframe.html"
+              frameborder="0"
+            ></iframe>
+          </div>
+          <hr class="border-black/10 -mx-4 lg:hidden" />
+        </div>
+      </div>
+      <div class="flex flex-col gap-y-4 px-4 justify-center min-w-0">
+        <p class="text-center font-bold">about this demo</p>
+        <p>
+          The blue container <span class="lg:hidden">above</span
+          ><span class="max-lg:hidden">to the left</span> is an iframe (a
+          different webpage loaded inside this one).
+        </p>
+        <p>
+          The iframe's page is separate from this one, and has a different
+          JavaScript context. An RPC helps bridge the gap, allowing both pages
+          to send messages and make requests to each other.
+        </p>
+        <hr class="border-black/10 -mx-4" />
+        <template id="message-template">
+          <div class="text-white px-4 bg-white/10 min-w-fit mb-2">
+            <p class="packet-meta whitespace-nowrap"></p>
+            <p
+              class="packet-payload pl-4 whitespace-nowrap *:!whitespace-nowrap"
+            ></p>
+          </div>
+        </template>
+        <p class="text-center font-bold">
+          parent logs &#x00b7;
+          <button
+            id="parent-logs-clear"
+            class="font-normal underline hover:decoration-2"
+          >
+            clear
+          </button>
+        </p>
+        <div
+          id="parent-logs"
+          class="rounded shadow pt-4 bg-slate-900 -mx-4 h-96 overflow-auto"
+        ></div>
+        <hr class="border-black/10 -mx-4" />
+        <p class="text-center font-bold">
+          iframe logs &#x00b7;
+          <button
+            id="iframe-logs-clear"
+            class="font-normal underline hover:decoration-2"
+          >
+            clear
+          </button>
+        </p>
+        <div
+          id="iframe-logs"
+          class="rounded shadow pt-4 bg-slate-900 -mx-4 h-96 overflow-auto"
+        ></div>
+      </div>
+    </div>
+    <script src="https://unpkg.com/json-format-highlight@1.0.4/dist/json-format-highlight.js"></script>
+    <script type="module" src="parent.js"></script>
+  </body>
+</html>

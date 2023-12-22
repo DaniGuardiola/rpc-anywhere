@@ -34,23 +34,29 @@ export type RPCMessagePortTransportOptions = Pick<
  */
 export function createTransportFromMessagePort(
   /**
-   * The object that supports `postMessage(message)` and
-   * `addEventListener("message", listener)`. This includes `Window`,
-   * `Worker`, `MessagePort`, and `BroadcastChannel`.
+   * The local port that will receive and handled "message" events
+   * through `addEventListener("message", listener)`.
    */
-  messageEventTarget: Window | Worker | MessagePort | BroadcastChannel,
+  localPort: Window | Worker | MessagePort | BroadcastChannel,
+  /**
+   * The remote port to send messages to through `postMessage(message)`.
+   */
+  remotePort: Window | Worker | MessagePort | BroadcastChannel,
   /**
    * Options for the message port transport.
    */
   options: RPCMessagePortTransportOptions = {},
 ): RPCTransport {
   const { transportId, filter } = options;
-  const target = messageEventTarget as Window; // little white TypeScript lie
+
+  // little white TypeScript lies
+  const local = localPort as Window;
+  const remote = remotePort as Window;
 
   let transportHandler: ((event: MessageEvent) => any) | undefined;
   return {
     send(data) {
-      target.postMessage(rpcTransportMessageOut(data, { transportId }));
+      remote.postMessage(rpcTransportMessageOut(data, { transportId }));
     },
     registerHandler(handler) {
       transportHandler = (event: MessageEvent) => {
@@ -62,11 +68,11 @@ export function createTransportFromMessagePort(
         if (ignore) return;
         handler(data);
       };
-      target.addEventListener("message", transportHandler);
+      local.addEventListener("message", transportHandler);
     },
     unregisterHandler() {
       if (transportHandler)
-        target.removeEventListener("message", transportHandler);
+        local.removeEventListener("message", transportHandler);
     },
   };
 }
