@@ -35,6 +35,7 @@ export type ParentSchema = RPCSchema<
       parentInputUpdated: string;
     };
   },
+  // infer request types from the request handler
   typeof requestHandler
 >;
 
