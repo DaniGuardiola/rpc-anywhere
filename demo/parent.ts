@@ -48,41 +48,42 @@ function waitForFrameLoad(frame: HTMLIFrameElement) {
 }
 
 // wait for the iframe to load
-await waitForFrameLoad(iframeEl);
-console.log("[parent] Parent loaded!");
+waitForFrameLoad(iframeEl).then(() => {
+  console.log("[parent] Parent loaded!");
 
-// create the parent's RPC
-const rpc = createRPC<ParentSchema, IframeSchema>({
-  // provide the transport
-  transport: createTransportFromMessagePort(window, iframeEl.contentWindow!, {
-    // provide a unique ID that matches the iframe
-    transportId: "rpc-anywhere-demo",
-  }),
-  // provide the request handler
-  requestHandler,
-  // this is for demo purposes - you can ignore it
-  _debugHooks: { onSend: _debugOnSend, onReceive: _debugOnReceive },
-});
+  // create the parent's RPC
+  const rpc = createRPC<ParentSchema, IframeSchema>({
+    // provide the transport
+    transport: createTransportFromMessagePort(window, iframeEl.contentWindow!, {
+      // provide a unique ID that matches the iframe
+      transportId: "rpc-anywhere-demo",
+    }),
+    // provide the request handler
+    requestHandler,
+    // this is for demo purposes - you can ignore it
+    _debugHooks: { onSend: _debugOnSend, onReceive: _debugOnReceive },
+  });
 
-// use the proxy as an alias ✨
-const iframe = rpc.proxy;
+  // use the proxy as an alias ✨
+  const iframe = rpc.proxy;
 
-// ready
-rpc.addMessageListener("ready", onIframeReady);
+  // ready
+  rpc.addMessageListener("ready", onIframeReady);
 
-// synced input
-syncedInputEl.addEventListener("input", () =>
-  iframe.send.parentInputUpdated(syncedInputEl.value),
-);
-rpc.addMessageListener(
-  "iframeInputUpdated",
-  (value) => (syncedInputEl.value = value),
-);
+  // synced input
+  syncedInputEl.addEventListener("input", () =>
+    iframe.send.parentInputUpdated(syncedInputEl.value),
+  );
+  rpc.addMessageListener(
+    "iframeInputUpdated",
+    (value) => (syncedInputEl.value = value),
+  );
 
-// colored button
-updateColoredButtonEl.addEventListener("click", async () => {
-  const currentColor = await iframe.request.getColor();
-  el("button-color").textContent = currentColor;
+  // colored button
+  updateColoredButtonEl.addEventListener("click", async () => {
+    const currentColor = await iframe.request.getColor();
+    el("button-color").textContent = currentColor;
+  });
 });
 
 type StoryDetails = {
