@@ -14,6 +14,8 @@ Create a type-safe RPC anywhere.
 npm i rpc-anywhere
 ```
 
+[✨ Interactive demo ✨](https://rpc-anywhere.dio.la/)
+
 ---
 
 RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer is provided. In other words: a way for messages to get from point A to point B and vice-versa.
@@ -89,9 +91,10 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
   - Message ports: `window`, iframes, workers, broadcast channels, etc.
   - Browser extensions: content scripts ↔ service worker.
   - Electron IPC (coming soon).
+- Tiny (~1kb gzipped).
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy APIs (e.g. `rpc.requestName(params)`).
-- Infers schema type from runtime request handlers.
+- Promise-based with optional proxy APIs (e.g. `proxy.requestName(params)`).
+- Schema type can be inferred from the request handlers.
 - Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
 
 ## <a name='Gettingstarted'></a>Getting started
@@ -237,7 +240,7 @@ Start with [RPC](./docs/1-rpc.md), then read about your transport of choice on t
 
 The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywhere/).
 
-**This package is ESM-only at the moment.** File an issue if this is a problem for you.
+**This package is published as both ESM and CommonJS.**
 
 ## <a name='Typesafetyfeatures'></a>Type safety and features
 
