@@ -11,23 +11,34 @@
 
 <h1>RPC</h1>
 
-Before reading this documentation, it is recommended to read [the Getting started section of the README](../README.md#getting-started).
+Before reading this documentation, it is recommended to check out [the "Getting started" section of the README](../README.md#getting-started).
 
 <h3>Table of contents</h3>
 
 <!-- vscode-markdown-toc -->
 
 - [RPC schemas](#rpc-schemas)
+  - [Declaring schemas](#declaring-schemas)
+  - [Using schemas in RPC instances](#using-schemas-in-rpc-instances)
+  - [Schema flexibility](#schema-flexibility)
+  - [Empty schemas](#empty-schemas)
+  - [Client/server RPC schemas](#clientserver-rpc-schemas)
+  - [Symmetrical RPC schemas](#symmetrical-rpc-schemas)
+  - [Documenting schemas with JSDoc](#documenting-schemas-with-jsdoc)
 - [Transports](#transports)
 - [Requests](#requests)
   - [Making requests](#making-requests)
   - [The request proxy API](#the-request-proxy-api)
   - [Request timeout](#request-timeout)
   - [Handling requests](#handling-requests)
-  - [Schema type from request handler](#schema-type-from-request-handler)
+  - [Inferring the schema from the request handler](#inferring-the-schema-from-the-request-handler)
 - [Messages](#messages)
   - [Sending messages](#sending-messages)
   - [Listening for messages](#listening-for-messages)
+- [The `proxy` property](#the-proxy-property)
+- [Recipes](#recipes)
+  - [Client/server RPC](#clientserver-rpc)
+  - [Symmetrical RPC](#symmetrical-rpc)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -37,9 +48,11 @@ Before reading this documentation, it is recommended to read [the Getting starte
 
 ## <a name='RPCschemas'></a>RPC schemas
 
-A schema defines the requests that a specific endpoint can respond to, and the messages that it can send. Since RPC Anywhere doesn't enforce a client-server architecture, each endpoint has its own schema, and both `RPC` instances need to "know" about the other's schema.
+A schema defines the requests that a specific endpoint can respond to, and the messages that it can send. Since RPC Anywhere doesn't enforce a client-server architecture, each endpoint has its own schema, and both RPC instances need to "know" about the other's schema.
 
 Schema types bring type safety to an instance, both when acting as a "client" (sending requests and listening for messages) and as a "server" (responding to requests and sending messages).
+
+### <a name='Declaringschemas'></a>Declaring schemas
 
 Schemas are declared with the `RPCSchema<InputSchema>` type, using the following structure:
 
@@ -65,7 +78,43 @@ type MySchema = RPCSchema<{
 }>;
 ```
 
-There is complete flexibility in the structure of the schemas. All properties can be omitted or set to `void`. Some examples:
+### Using schemas in RPC instances
+
+Once you've declared your schemas, you can use them to create an RPC instance. An instance acts as the "client" that sends requests and listens for messages from the other endpoint, and as the "server" that responds to requests and sends messages to the other endpoint.
+
+For this reason, you need to pass two schema types to `createRPC`: the local schema (representing this instance's capabilities), and the remote schema (representing the other endpoint's capabilities).
+
+The local schema is the first type parameter, and the remote schema is the second type parameter.
+
+```ts
+import { createRPC } from "rpc-anywhere";
+
+const rpc = createRPC<LocalSchema, RemoteSchema>({
+  // ...
+});
+```
+
+A typical pattern is to declare the local schema in the same file where the corresponding RPC instance is created. For example, you might end up with a file structure like this:
+
+```ts
+// rpc-a.ts
+import { type SchemaB } from "./rpc-b.js";
+
+export type SchemaA = RPCSchema</* ... */>;
+const rpcA = createRPC<SchemaA, SchemaB>();
+
+// rpc-b.ts
+import { type SchemaA } from "./rpc-a.js";
+
+export type SchemaB = RPCSchema</* ... */>;
+const rpcB = createRPC<SchemaB, SchemaA>();
+```
+
+You might have noticed that the schema imports are circular. This is completely fine! Circular imports are only problematic for runtime values, but schemas are types which are only used for type-checking/IDE features and do not affect bundling or runtime behavior.
+
+### <a name='Schemaflexibility'></a>Schema flexibility
+
+There is complete flexibility in the structure of the schemas. All properties can be omitted or set to `void`. Request parameters and message contents can be optional too. Some examples:
 
 ```ts
 type MySchema = RPCSchema<{
@@ -95,6 +144,11 @@ type MySchema = RPCSchema<{
   messages: {
     // message with no content
     messageName: void;
+
+    // message with optional content
+    messageName?: {
+      content?: string;
+    };
   };
 }>;
 
@@ -113,7 +167,9 @@ type MySchema = RPCSchema<{
 }>;
 ```
 
-Schemas can be "empty" if the RPC instance does not handle requests or send messages (resembling a "client"). For this situation, there is a special type: `EmptyRPCSchema`.
+### <a name='Emptyschemas'></a>Empty schemas
+
+Schemas can be "empty" if one of the RPC instances does not handle requests or send messages (resembling a "pure" client/server connection). For this situation, there is a special type: `EmptyRPCSchema`.
 
 ```ts
 type RemoteSchema = RPCSchema<{
@@ -122,12 +178,12 @@ type RemoteSchema = RPCSchema<{
   };
 }>;
 
-// rpc-local.ts ("client")
-const rpc = new RPC<EmptyRPCSchema, RemoteSchema>(/* ... */);
+// rpc-local.ts (client)
+const rpc = createRPC<EmptyRPCSchema, RemoteSchema>(/* ... */);
 rpc.request("requestName");
 
-// rpc-remote.ts ("server")
-const rpc = new RPC<RemoteSchema, EmptyRPCSchema>({
+// rpc-remote.ts (server)
+const rpc = createRPC<RemoteSchema, EmptyRPCSchema>({
   requestHandler: {
     requestName() {
       /* ... */
@@ -136,14 +192,16 @@ const rpc = new RPC<RemoteSchema, EmptyRPCSchema>({
 });
 ```
 
-For convenience, the `createClientRPC` and `createServerRPC` functions can be used. They both take the remote (server) schema as a type parameter, as it is the one that matters (the local/client one is necessarily empty).
+### <a name='ClientserverRPCschemas'></a>Client/server RPC schemas
+
+For convenience, `createClientRPC` and `createServerRPC` can be used to achieve the same result as in the previous section in a simpler way. They both take the remote (server) schema as a type parameter, as it is the only one that matters (the local/client one is empty).
 
 ```ts
-// rpc-local.ts ("client")
+// rpc-local.ts (client)
 const rpc = createClientRPC<RemoteSchema>(/* ... */);
 await rpc.request("requestName");
 
-// rpc-remote.ts ("server")
+// rpc-remote.ts (server)
 const rpc = createServerRPC<RemoteSchema>({
   requestHandler: {
     requestName() {
@@ -153,7 +211,9 @@ const rpc = createServerRPC<RemoteSchema>({
 });
 ```
 
-If both RPC instances are "symmetrical" (i.e. they both handle the same requests and send the same messages), you can skip the second schema type parameter:
+### <a name='SymmetricalRPCschemas'></a>Symmetrical RPC schemas
+
+If both RPC endpoints are "symmetrical" (i.e. they both handle the same requests and send the same messages), you can skip the second schema type parameter:
 
 ```ts
 // rpc-a.ts
@@ -165,28 +225,98 @@ const rpcB = createRPC<SymmetricalSchema>(/* ... */);
 
 In this case, the passed schema will be interpreted as both the local and remote schema.
 
+### <a name='DocumentingschemaswithJSDoc'></a>Documenting schemas with JSDoc
+
+Schemas support JSDoc comments in almost everything that can be defined, including:
+
+- Requests.
+- Request parameters.
+- Request responses.
+- Messages.
+- Message contents.
+
+These comments are later accessible when using the RPC instances. For example, this is how a request might be documented:
+
+````ts
+type MySchema = RPCSchema<{
+  requests: {
+    /**
+     * Move the car.
+     *
+     * @example
+     *
+     * ```
+     * const result = await rpc.request.move({ direction: "left", duration: 1000 });
+     * ```
+     */
+    move: {
+      params: {
+        /**
+         * The direction of the movement.
+         */
+        direction: "left" | "right";
+        /**
+         * The total duration of the movement.
+         */
+        duration: number;
+        /**
+         * The velocity of the car.
+         *
+         * @default 100
+         */
+        velocity?: number;
+      };
+      response: {
+        /**
+         * The total distance traveled by the car.
+         */
+        distance: number;
+        /**
+         * The final position of the car.
+         */
+        position: number;
+      };
+    };
+  };
+}>;
+````
+
+If this example schema is used for the remote RPC endpoint, hovering over any of the symbols highlighted below (in a supported IDE, like Visual Studio Code) will show the corresponding JSDoc documentation, along with their types.
+
+```ts
+const { distance, position } = await rpc.request.move({
+  //    ^         ^                              ^
+  direction: "left",
+  // ^
+  duration: 1000,
+  // ^
+  velocity: 200,
+  // ^
+});
+```
+
 ## <a name='Transports'></a>Transports
 
 An RPC transport is the channel through which messages are sent and received between point A and point B. In RPC Anywhere, a transport is an object that contains the specific logic to accomplish this.
 
 Using a built-in transport is **strongly recommended**. You can learn about them in the [Built-in transports](./2-built-in-transports.md) page.
 
-If you can't find one that fits your use case, you can create one yourself. Learn how in the [Creating a custom transport](./4-creating-a-custom-transport.md) page.
+If you can't find one that fits your use case, you can create one yourself. Learn how in the [Creating a custom transport](./4-creating-a-custom-transport.md) page. You can also consider filing a feature request or contributing a new built-in transport to the project.
 
-To provide a transport to an RPC instance pass it as the `transport` option, or lazily set at a later time using the `setTransport` method. For example:
+To provide a transport to an RPC instance pass it to `createRPC` as the `transport` option, or lazily set it at a later time using the `setTransport` method. For example:
 
 ```ts
-const rpc = createRPC<Schema>({
-  transport: createTransportFromMessagePort(iframeElement.contentWindow),
+const rpc = createRPC<LocalSchema, RemoteSchema>({
+  transport: createTransportFromMessagePort(window, iframe.contentWindow),
 });
 
 // or
 
-const rpc = createRPC<Schema>();
-rpc.setTransport(createTransportFromMessagePort(iframeElement.contentWindow));
+const rpc = createRPC<LocalSchema, RemoteSchema>();
+rpc.setTransport(createTransportFromMessagePort(window, iframe.contentWindow));
 ```
 
-Keep in mind that if the transport is set lazily, the RPC instance will be unusable until it is set.
+Keep in mind that if the transport is set lazily, the RPC instance will be unusable until then.
 
 ## <a name='Requests'></a>Requests
 
@@ -200,7 +330,7 @@ const response = await rpc.request("requestName", {
 });
 ```
 
-The parameters can be omitted if the request doesn't have any:
+The parameters can be omitted if the request doesn't support any (or if they are optional):
 
 ```ts
 const response = await rpc.request("requestName");
@@ -216,18 +346,18 @@ const response = await rpc.request.requestName({
 });
 ```
 
-The `rpc.request` property acts as a function and as an object at the same time, which means that, when autocompleting with TypeScript (when you type `rpc.request.`), some suggestions will be properties from the function prototype (`apply`, `bind`, `call`, etc.).
+The `rpc.request` property acts as a function and as an object at the same time. This has an unfortunate effect: when autocompleting with TypeScript (when you type `rpc.request.`), some suggestions will be properties from the function JavaScript prototype (`apply`, `bind`, `call`...).
 
-If you want a version that only contains the proxied methods (e.g. for a better developer experience or for aliasing), you can use `requestProxy` instead:
+If you want a version that only contains the proxied methods (e.g. for a better developer experience or aliasing), you can use `requestProxy` instead:
 
 ```ts
-const worker = workerRpc.requestProxy;
-const response = await worker.methodName(param: "value");
+const chef = chefRPC.requestProxy;
+const dish = await chef.cook({ recipe: "rice" });
 ```
 
 ### <a name='Requesttimeout'></a>Request timeout
 
-If a request takes too long to complete, it will time out and be rejected with an error. The default request timeout is 1000 milliseconds. You can change it by passing a `maxRequestTime` option to the `RPC` constructor:
+If the remote endpoint takes too long to respond to a request, it will time out and be rejected with an error. The default request timeout is 1000 milliseconds (1 second). You can change it by passing a `maxRequestTime` option to `createRPC`:
 
 ```ts
 const rpc = createRPC<Schema>({
@@ -236,15 +366,15 @@ const rpc = createRPC<Schema>({
 });
 ```
 
-To disable the timeout, pass `Infinity`. Be careful with this, as it can lead to requests hanging indefinitely.
+To disable the timeout, pass `Infinity`. Be careful! It can lead to requests hanging indefinitely.
 
 ### <a name='Handlingrequests'></a>Handling requests
 
-Requests are handled using the `requestHandler` option of the `RPC` constructor. The request handler can be defined in two ways:
+Requests are handled using the `requestHandler` option of `createRPC`. The request handler can be defined in two ways:
 
 **Object format**
 
-The object format is the recommended way to define request handlers, because it is the most ergonomic, provides full type safety, and supports a "fallback" handler. All functions can be `async`.
+The object format is the recommended way to define request handlers because it is the most ergonomic, provides full type safety, and supports a "fallback" handler. All handlers can be `async`.
 
 ```ts
 const rpc = createRPC<Schema>({
@@ -302,55 +432,66 @@ const rpc = createRPC<Schema>({
 
 ---
 
-The request handler can also be set lazily with the `setRequestHandler` method:
+The request handler can be lazily set with the `setRequestHandler` method:
 
 ```ts
 const rpc = createRPC<Schema>();
 rpc.setRequestHandler(/* ... */);
 ```
 
-### <a name='Schematypefromrequesthandler'></a>Schema type from request handler
+Until the request handler is set, the RPC instance won't be able to handle requests.
 
-There is some duplication between the request handler and the schema type. This can be improved by creating the schema type from runtime values.
+### <a name='Inferringtheschemafromtherequesthandler'></a>Inferring the schema from the request handler
 
-To do this, first create the request handler using `createRPCRequestHandler`:
+Defining both a "requests" schema and a request handler can be redundant. For example:
 
 ```ts
-import { createRPCRequestHandler } from "rpc-anywhere";
+type Schema = RPCSchema<{
+  requests: {
+    myRequest: {
+      params: { a: number; b: string };
+      response: { c: boolean };
+    };
+  };
+  messages: { myMessage: void };
+}>;
 
-const myRequestHandler = createRPCRequestHandler({
-  requestName(/* request parameters */) {
-    /* handle the request */
-    return /* response */;
-  },
+const rpc = createRPC<Schema>({
   // ...
+  requestHandler: {
+    myRequest({ a, b }) {
+      return { c: a > 0 && b.length > 0 };
+    },
+  },
 });
 ```
 
-To use it in a schema type, pass its type as the second type parameter by using `typeof`:
+To reduce duplication, RPC Anywhere provides a way to partially infer the schema type from the request handler.
+
+To do this, first create the request handler (in object format) using `createRPCRequestHandler`, and then pass its type as the second type parameter by using `typeof`. Updating the previous example:
 
 ```ts
-import { type RPCRequestSchemaFromHandler } from "rpc-anywhere";
+const myRequestHandler = createRPCRequestHandler({
+  myRequest({ a, b }: { a: number; b: string }) {
+    return { c: a > 0 && b.length > 0 };
+  },
+});
 
 type Schema = RPCSchema<
-  {
-    messages: {
-      // ...
-    };
-  },
+  { messages: { myMessage: void } },
   typeof myRequestHandler
 >;
-```
 
-The schema will then infer the `requests` property type from the request handler. Note that if you do define the `requests` property in the first type argument, **it will be completely ignored** and overridden with the inferred type.
-
-Finally, pass the schema type and the request handler to the `RPC` constructor:
-
-```ts
-const rpc = new RPC<Schema>({
+const rpc = createRPC<Schema>({
   // ...
   requestHandler: myRequestHandler,
 });
+```
+
+If there are no messages in the schema, you can pass `void` as the first type parameter to `RPCSchema`:
+
+```ts
+type Schema = RPCSchema<void, typeof myRequestHandler>;
 ```
 
 ## <a name='Messages'></a>Messages
@@ -369,6 +510,20 @@ The content can be omitted if the message doesn't have any or if it's optional:
 
 ```ts
 rpc.send("messageName");
+```
+
+Similar to requests, there is a message proxy API you can use:
+
+```ts
+rpc.send.messageName({
+  /* message content */
+});
+
+// or
+
+rpc.sendProxy.messageName({
+  /* message content */
+});
 ```
 
 ### <a name='Listeningformessages'></a>Listening for messages
@@ -394,6 +549,74 @@ A listener can be removed with the `removeMessageListener` method:
 ```ts
 rpc.removeMessageListener("messageName", listener);
 rpc.removeMessageListener("*", listener);
+```
+
+## <a name='Theproxyproperty'></a>The `proxy` property
+
+RPC instances also expose a `proxy` property, which is an object that contains both proxies (`request` and `send`). It is an alternative API provided for convenience, for example:
+
+```ts
+const rpc = createRPC<Schema>(/* ... */).proxy;
+rpc.request.requestName(/* ... */);
+rpc.send.messageName(/* ... */);
+```
+
+## <a name='Recipes'></a>Recipes
+
+Below are some common examples to help you get started with RPC Anywhere.
+
+### <a name='ClientserverRPC'></a>Client/server RPC
+
+```ts
+// server.ts
+const requestHandler = createRPCRequestHandler({
+  hello(name: string) {
+    return `Hello, ${name}!`;
+  },
+});
+
+export type ServerSchema = RPCSchema<void, typeof requestHandler>;
+
+const rpc = createServerRPC<ServerSchema>({
+  // ...
+  requestHandler,
+});
+
+// client.ts
+import { type ServerSchema } from "./server.js";
+
+const rpc = createClientRPC<ServerSchema>(/* ... */).proxy.request;
+const response = await rpc.hello("world");
+console.log(response); // Hello, world!
+```
+
+### <a name='SymmetricalRPC'></a>Symmetrical RPC
+
+```ts
+// schema.ts
+type SymmetricalSchema = RPCSchema<{
+  requests: {
+    hello: {
+      params: { name: string };
+      response: string;
+    };
+  };
+  messages: {
+    goodbye: void;
+  };
+}>;
+
+// rpc-a.ts
+const rpcA = createRPC<SymmetricalSchema>(/* ... */);
+rpcA.addMessageListener("goodbye", () => {
+  console.log("Goodbye!");
+});
+
+// rpc-b.ts
+const rpcB = createRPC<SymmetricalSchema>(/* ... */);
+const response = await rpcB.request.hello({ name: "world" });
+console.log(response); // Hello, world!
+rpcB.send.goodbye();
 ```
 
 ---

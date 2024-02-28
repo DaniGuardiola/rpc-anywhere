@@ -37,11 +37,11 @@ export function createTransportFromMessagePort(
    * The local port that will receive and handled "message" events
    * through `addEventListener("message", listener)`.
    */
-  localPort: Window | Worker | MessagePort | BroadcastChannel,
+  localPort: MessagePort | Window | Worker | BroadcastChannel,
   /**
    * The remote port to send messages to through `postMessage(message)`.
    */
-  remotePort: Window | Worker | MessagePort | BroadcastChannel,
+  remotePort: MessagePort | Window | Worker | BroadcastChannel,
   /**
    * Options for the message port transport.
    */
@@ -76,5 +76,3 @@ export function createTransportFromMessagePort(
     },
   };
 }
-
-// TODO: message port transport tests.

@@ -4,7 +4,8 @@ import { type RPCSchema } from "../types.js";
 
 /* IMPORTANT: this test is NOT automatic.
 
-Instead, it must be checked manually by accessing the generated documentation for each relevant symbol (e.g. by hovering over them
+Instead, it must be checked manually by accessing the generated
+documentation for each relevant symbol (e.g. by hovering over them
 in Visual Studio Code) and comparing.
 
 Each line with symbols to check has a comment below pointing to

@@ -116,7 +116,7 @@ test("messages are sent and received correctly", async () => {
   expect(received2).toBe(2);
 });
 
-test("send proxy sends messages correctly", async () => {
+test("send as proxy sends messages correctly", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   let received1 = 0;
   let received2 = 0;
@@ -156,6 +156,46 @@ test("send proxy sends messages correctly", async () => {
   expect(received2).toBe(2);
 });
 
+test("sendProxy sends messages correctly", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+  let received1 = 0;
+  let received2 = 0;
+  const listener: RPCMessageHandlerFn<Schema2["messages"], "message2"> = (
+    payload,
+  ) => {
+    expect(payload).toBe("second");
+    received2++;
+  };
+  rpc1.addMessageListener("message2", listener);
+  rpc2.addMessageListener("message1", (payload) => {
+    expect(payload).toBe("first");
+    received1++;
+  });
+
+  rpc1.sendProxy.message1("first");
+  rpc2.sendProxy.message2("second");
+  rpc2.sendProxy.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(1);
+  expect(received2).toBe(1);
+
+  rpc1.removeMessageListener("message2", listener);
+  rpc1.sendProxy.message1("first");
+  rpc2.sendProxy.message2("second");
+  rpc2.sendProxy.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(2);
+  expect(received2).toBe(1);
+
+  rpc1.addMessageListener("message2", listener);
+  rpc1.sendProxy.message1("first");
+  rpc2.sendProxy.message2("second");
+  rpc2.sendProxy.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(3);
+  expect(received2).toBe(2);
+});
+
 test("wildcard message handler works", async () => {
   const { rpc1, rpc2 } = createTestRPCs();
   let receivedCount = 0;
@@ -190,6 +230,52 @@ test("wildcard message handler works", async () => {
   expect(receivedCount).toBe(2);
   expect(lastNameReceived).toBe("message3");
   expect(lastPayloadReceived).toBe("third");
+});
+
+test("proxy object works for requests and messages", async () => {
+  const { rpc1, rpc2 } = createTestRPCs();
+
+  const response1 = await rpc1.proxy.request.method2({ b: "hello" });
+  expect(response1).toBe("hello");
+  const response2 = await rpc2.proxy.request.method1({ a: 1234 });
+  expect(response2).toBe(1234);
+
+  let received1 = 0;
+  let received2 = 0;
+  const listener: RPCMessageHandlerFn<Schema2["messages"], "message2"> = (
+    payload,
+  ) => {
+    expect(payload).toBe("second");
+    received2++;
+  };
+  rpc1.addMessageListener("message2", listener);
+  rpc2.addMessageListener("message1", (payload) => {
+    expect(payload).toBe("first");
+    received1++;
+  });
+
+  rpc1.proxy.send.message1("first");
+  rpc2.proxy.send.message2("second");
+  rpc2.proxy.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(1);
+  expect(received2).toBe(1);
+
+  rpc1.removeMessageListener("message2", listener);
+  rpc1.proxy.send.message1("first");
+  rpc2.proxy.send.message2("second");
+  rpc2.proxy.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(2);
+  expect(received2).toBe(1);
+
+  rpc1.addMessageListener("message2", listener);
+  rpc1.proxy.send.message1("first");
+  rpc2.proxy.send.message2("second");
+  rpc2.proxy.send.ignored("forever-alone");
+  await delay(100);
+  expect(received1).toBe(3);
+  expect(received2).toBe(2);
 });
 
 // TODO: find a way to run these tests with all actual transports too.

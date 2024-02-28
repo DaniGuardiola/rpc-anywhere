@@ -6,8 +6,6 @@
 
 <h1>Creating a custom transport</h1>
 
-TODO: explain why all are optional.
-
 An RPC transport is the channel through which messages are sent and received between point A and point B. The specific implementation depends on the context, but the requirements to create a transport that an RPC instance can use are always the same:
 
 - Provide a `send` function that takes an arbitrary message and sends it to the other endpoint.
@@ -83,4 +81,3 @@ All built-in transports provide ways to achieve this by either providing a uniqu
 [**Previous: Bridging transports**](./3-bridging-transports.md)
 
 </div>
-```

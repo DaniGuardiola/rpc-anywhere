@@ -1,3 +1,4 @@
+import { createRPCRequestHandler } from "../create-request-handler.js";
 import { createRPC } from "../create-rpc.js";
 import { type EmptyRPCSchema, type RPCSchema } from "../types.js";
 
@@ -520,4 +521,96 @@ createRPC<NoMessagesSchema>({
   requestHandler: {},
 });
 
-// TODO: createRequestHandler and Schema inference tests.
+// createRPCRequestHandler and schema inference
+// --------------------------------------------
+
+const requestHandler = createRPCRequestHandler({
+  method1: (params: { a: number; b: string }) => {
+    params.a;
+    params.b;
+    return 1;
+  },
+  method2: (params: { required: number; optional?: string }) => {
+    params.required;
+    params.optional;
+    return "hello";
+  },
+  method3: (params?: string) => {
+    params;
+  },
+  method4: () => {},
+});
+
+type InferredSchema = RPCSchema<void, typeof requestHandler>;
+
+const rpc5 = createRPC<InferredSchema>();
+
+rpc5.request("method1", { a: 1, b: "2" });
+rpc5.request.method1({ a: 1, b: "2" });
+rpc5.request("method2", { required: 1 });
+rpc5.request.method2({ required: 1 });
+rpc5.request("method3");
+rpc5.request.method3();
+rpc5.request("method3", "hello");
+rpc5.request.method3("hello");
+rpc5.request("method4");
+rpc5.request.method4();
+// @ts-expect-error - Expected error.
+rpc5.request("method1", { a: 1 });
+// @ts-expect-error - Expected error.
+rpc5.request.method1({ a: 1 });
+// @ts-expect-error - Expected error.
+rpc5.request("method1", { a: 1, b: 2 });
+// @ts-expect-error - Expected error.
+rpc5.request.method1({ a: 1, b: 2 });
+// @ts-expect-error - Expected error.
+rpc5.request("method1", { a: 1, b: "2", c: 3 });
+// @ts-expect-error - Expected error.
+rpc5.request.method1({ a: 1, b: "2", c: 3 });
+// @ts-expect-error - Expected error.
+rpc5.request("method2", { required: 1, optional: 2 });
+// @ts-expect-error - Expected error.
+rpc5.request.method2({ required: 1, optional: 2 });
+// @ts-expect-error - Expected error.
+rpc5.request("method2", { required: 1, optional: "2", extra: 3 });
+// @ts-expect-error - Expected error.
+rpc5.request.method2({ required: 1, optional: "2", extra: 3 });
+// @ts-expect-error - Expected error.
+rpc5.request("method3", 1);
+// @ts-expect-error - Expected error.
+rpc5.request.method3(1);
+// @ts-expect-error - Expected error.
+rpc5.request("method4", "hello");
+// @ts-expect-error - Expected error.
+rpc5.request.method4("hello");
+
+(await rpc5.request("method1", { a: 1, b: "2" })) satisfies number;
+(await rpc5.request.method1({ a: 1, b: "2" })) satisfies number;
+(await rpc5.request("method2", { required: 1 })) satisfies string;
+(await rpc5.request.method2({ required: 1 })) satisfies string;
+(await rpc5.request("method3")) satisfies void;
+(await rpc5.request.method3()) satisfies void;
+(await rpc5.request("method3", "hello")) satisfies void;
+(await rpc5.request.method3("hello")) satisfies void;
+(await rpc5.request("method4")) satisfies void;
+(await rpc5.request.method4()) satisfies void;
+// @ts-expect-error - Expected error.
+(await rpc5.request("method1", { a: 1, b: "2" })) satisfies string;
+// @ts-expect-error - Expected error.
+(await rpc5.request.method1({ a: 1, b: "2" })) satisfies string;
+// @ts-expect-error - Expected error.
+(await rpc5.request("method2", { required: 1 })) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request.method2({ required: 1 })) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request("method3")) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request.method3()) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request("method3", "hello")) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request.method3("hello")) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request("method4")) satisfies number;
+// @ts-expect-error - Expected error.
+(await rpc5.request.method4()) satisfies number;
