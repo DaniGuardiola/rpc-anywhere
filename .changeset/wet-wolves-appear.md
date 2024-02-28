@@ -2,4 +2,4 @@
 "rpc-anywhere": minor
 ---
 
-Docs improvements and minor fixes
+Updated and improved documentation.
