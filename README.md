@@ -18,14 +18,14 @@ npm i rpc-anywhere
 
 RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer is provided. In other words: a way for messages to get from point A to point B and vice-versa.
 
-It also ships with a few transports: iframes, Electron, browser extensions, service workers...
+It also ships with a few transports: iframes, Electron, browser extensions, workers...
 
 <details>
 <summary><b>What is an RPC?</b></summary>
 
 > In the context of this library, an RPC is a connection between two endpoints, which send messages to each other.
 >
-> If the sender expects a response, it's called a "request". A request is similar to a function call where the function is executed on the other side of the connection, and the result is sent back to the sender.
+> If the sender expects a response, it's called a "request". A request can be thought of as a function call where the function is executed on the other side of the connection, and the result is sent back to the sender.
 >
 > [Learn more about the general concept of RPCs on Wikipedia.](https://www.wikiwand.com/en/Remote_procedure_call)
 
@@ -36,10 +36,9 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
 
 > A transport layer is the "channel" through which messages are sent and received between point A and point B. Some very common examples of endpoints:
 >
-> - Websites: iframes, service workers...
-> - Browser extensions: content scripts, service workers...
-> - Tabs: `localStorage` events, `BroadcastChannel`...
-> - Electron: `ipcRenderer`, `ipcMain`...
+> - Websites: iframes, workers, `BroadcastChannel`.
+> - Browser extensions: content script ↔ service worker.
+> - Electron: renderer process ↔ main process.
 
 </details>
 
@@ -88,9 +87,10 @@ It also ships with a few transports: iframes, Electron, browser extensions, serv
 - Type-safe and extensively tested.
 - Transport agnostic, with ready-to-use transports:
   - Message ports: `window`, iframes, workers, broadcast channels, etc.
-  - Browser extensions: content scripts <-> service worker.
+  - Browser extensions: content scripts ↔ service worker.
+  - Electron IPC (coming soon).
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy APIs (`rpc.request.methodName(params)` and `rpc.send.messageName(content)`).
+- Promise-based with optional proxy APIs (e.g. `rpc.requestName(params)`).
 - Infers schema type from runtime request handlers.
 - Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
 
@@ -125,7 +125,7 @@ type ChefSchema = RPCSchema<{
   };
 }>;
 
-type WorkerSchema = RPCSchema<{
+type ManagerSchema = RPCSchema<{
   requests: {
     getIngredients: {
       params: { neededIngredients: IngredientList };
@@ -148,44 +148,46 @@ Then, we create each RPC instance:
 import { createRPC } from "rpc-anywhere";
 
 // chef-rpc.ts
-const chefRpc = createRPC<ChefSchema, WorkerSchema>({
+const chefRpc = createRPC<ChefSchema, ManagerSchema>({
   transport: createRestaurantTransport(),
 });
 
-// worker-rpc.ts
-const workerRpc = createRPC<WorkerSchema, ChefSchema>({
+// manager-rpc.ts
+const managerRpc = createRPC<ManagerSchema, ChefSchema>({
   transport: createRestaurantTransport(),
 });
 ```
 
-Schema types are passed as type parameters to `RPC`. The first one is the schema of the RPC being created, and the second one is the schema of the RPC on the other endpoint (the "remote" schema).
+Schema types are passed as type parameters to `createRPC`. The first one is the local schema, while the second one is the schema of the other endpoint (the "remote" schema).
 
-RPC Anywhere is transport-agnostic: you need to specify it. A transport provides the means to send and listen for messages for the other endpoint. A common real-world example is communicating with an iframe through `window.postMessage(message)` and `window.addEventListener('message', handler)`.
+RPC Anywhere is transport-agnostic: you need to specify it. A transport provides the means to send and listen for messages to and from the other endpoint. A common real-world example is communicating with an iframe through `window.postMessage(message)` and `window.addEventListener('message', handler)`.
+
+You can use [a built-in transport](./docs/2-built-in-transports.md), or [create your own](./docs/4-creating-a-custom-transport.md).
 
 ### <a name='Messages'></a>Messages
 
-Here's how the chef RPC could listen for incoming messages from the worker RPC:
+Here's how the chef could listen for incoming messages from the manager:
 
 ```ts
 // chef-rpc.ts
 chefRpc.addMessageListener("takingABreak", ({ duration, reason }) => {
   console.log(
-    `The worker is taking a break for ${duration} minutes: ${reason}`,
+    `The manager is taking a break for ${duration} minutes: ${reason}`,
   );
 });
 ```
 
-The worker can then send a message to the chef:
+The manager can then send a message to the chef:
 
 ```ts
-// worker-rpc.ts
-workerRpc.send.takingABreak({ duration: 30, reason: "lunch" });
+// manager-rpc.ts
+managerRpc.send.takingABreak({ duration: 30, reason: "lunch" });
 ```
 
 When the chef receives the message, the listener will be called, and the following will be logged:
 
 ```
-The worker is taking a break for 30 minutes: lunch
+The manager is taking a break for 30 minutes: lunch
 ```
 
 ### <a name='Requests'></a>Requests
@@ -194,11 +196,11 @@ To handle incoming requests, we need to define a request handler:
 
 ```ts
 // chef-rpc.ts
-const chefRpc = createRPC<ChefSchema, WorkerSchema>({
+const chefRpc = createRPC<ChefSchema, ManagerSchema>({
   // ...
   requestHandler: {
     cook({ recipe }) {
-      return cook(recipe, availableIngredients);
+      return prepareDish(recipe, availableIngredients);
     },
   },
 });
@@ -210,12 +212,12 @@ Now the chef RPC can respond to `cook` requests. Request handlers can be written
 To make a request, there are two main options:
 
 ```ts
-// worker-rpc.ts
+// manager-rpc.ts
 
 // using ".request()"
-const dish = await workerRpc.request("cook", { recipe: "pizza" });
+const dish = await managerRpc.request("cook", { recipe: "pizza" });
 // using the request proxy API
-const dish = await workerRpc.request.cook({ recipe: "pizza" });
+const dish = await managerRpc.request.cook({ recipe: "pizza" });
 ```
 
 Both are functionally equivalent.
@@ -239,7 +241,19 @@ The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywh
 
 ## <a name='Typesafetyfeatures'></a>Type safety and features
 
-TODO: section.
+RPC Anywhere is designed to be as type-safe as possible while maintaining great ergonomics and flexibility. Here are some examples:
+
+- When making requests and sending messages, all data is strictly typed based on the schema types including request parameters, response data and message contents.
+- Similarly, all data involved in handling requests and listening to messages is strictly typed. For example, you can't return the wrong response from a request handler.
+- Most times, you'll get autocomplete suggestions in your IDE, like request or message names.
+- The proxy APIs for requests and messages are fully typed as well based on the schema types. This means you can't call a request or send a message that doesn't exist, or with the wrong data types.
+
+This library goes to even greater lengths to ensure a smooth developer experience, for example:
+
+- It is possible to infer the request schema types from the runtime request handlers, which prevents duplication by having a single source of truth.
+- The features of an RPC instance are constrained based on the schema types. For example, if the remote schema doesn't declare any requests, the `request` method won't be available in the first place. Similarly, if the local schema doesn't declare any requests, you can't set a request handler or customize the maximum request time. This affects almost all of the methods and options!
+
+Besides these, many other minor type-related details make RPC Anywhere extremely type-safe and a joy to work with.
 
 ## <a name='Featuresunderconsideration'></a>Features under consideration
 
@@ -254,6 +268,7 @@ If you need any of these, please [file a feature request](https://github.com/Dan
 - Many-to-one or many-to-many connections.
 - Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler.
 - A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport.
+- Runtime validation support (e.g. through zod or valibot).
 - [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art

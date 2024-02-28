@@ -375,9 +375,12 @@ type ResolvedRPCSchema<
  * A schema for requests and messages.
  */
 export type RPCSchema<
-  InputSchema extends InputRPCSchema = InputRPCSchema,
+  InputSchema extends InputRPCSchema | void = InputRPCSchema,
   RequestHandler extends RPCRequestHandlerObject | undefined = undefined,
-> = ResolvedRPCSchema<InputSchema, RequestHandler>;
+> = ResolvedRPCSchema<
+  InputSchema extends InputRPCSchema ? InputSchema : InputRPCSchema,
+  RequestHandler
+>;
 
 /**
  * An "empty" schema. Represents an RPC endpoint that doesn't
@@ -474,11 +477,12 @@ type MethodsByRemoteSchema<RemoteSchema extends RPCSchema> =
 type MethodsByRemoteSchemaAndLocalSchema<
   LocalSchema extends RPCSchema,
   RemoteSchema extends RPCSchema,
-> = NonNullable<unknown> extends LocalSchema["messages"]
-  ? never
-  : NonNullable<unknown> extends RemoteSchema["requests"]
+> =
+  NonNullable<unknown> extends LocalSchema["messages"]
     ? never
-    : RPCRequestsOutMessagesOutMethod;
+    : NonNullable<unknown> extends RemoteSchema["requests"]
+      ? never
+      : RPCRequestsOutMessagesOutMethod;
 
 /**
  * An RPC instance type, tailored to a specific set of schemas.

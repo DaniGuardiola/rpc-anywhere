@@ -191,7 +191,7 @@ function _debugAppendMessage(
   }
   if (packet.type === "request") {
     msgEl.querySelector(".packet-meta")!.textContent =
-      `${time} ${typeArrow} request (${packet.id}): ${packet.method}`;
+      `${time} ${typeArrow} request (id: ${packet.id}): ${packet.method}`;
     msgEl.querySelector(".packet-payload")!.innerHTML = jsonFormatHighlight(
       packet.params === undefined ? "&lt;no params>" : packet.params,
     );
