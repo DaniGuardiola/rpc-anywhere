@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.5.0
+
+### Minor Changes
+
+- db13394: Publish CJS version.
+
 ## 1.4.0
 
 ### Minor Changes
