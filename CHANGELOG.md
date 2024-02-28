@@ -1,5 +1,21 @@
 # RPC Anywhere
 
+## 1.4.0
+
+### Minor Changes
+
+- fefe796: Fixed message port transport.
+- fefe796: Added debug hooks for logging and debugging.
+- 14c38f9: Support "void" in RPCSchema, useful for inferring from request handler when there are no messages.
+- fefe796: Added a cool demo!
+- 14c38f9: Updated and improved documentation.
+
+### Patch Changes
+
+- fefe796: Better naming for low-level message types.
+- 14c38f9: Improve test coverage.
+- fefe796: Reduced chance of colision for the transport id key.
+
 ## 1.3.4
 
 ### Patch Changes
