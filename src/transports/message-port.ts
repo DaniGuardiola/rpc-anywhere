@@ -76,5 +76,3 @@ export function createTransportFromMessagePort(
     },
   };
 }
-
-// TODO: message port transport tests.
