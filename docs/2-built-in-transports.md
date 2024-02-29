@@ -67,7 +67,6 @@ Works with any objects that implement a [`MessagePort`](https://developer.mozill
 
 - **[Window](https://developer.mozilla.org/en-US/docs/Web/API/Window)**: the global `window` object of a top-level page or the `contentWindow` of an iframe.
 - **[Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker)**: a web worker. Other kinds of workers (like [service workers](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) and [worklets](https://developer.mozilla.org/en-US/docs/Web/API/Worklet)) are also supported through their respective interfaces.
--
 - **[BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)**: a special kind of message port that can send messages to all other `BroadcastChannel` objects with the same name. It can be used to communicate between different windows, tabs, or iframes.
 
 To create a transport, you need to specify two different ports:
