@@ -78,10 +78,10 @@ Note that they don't need to be of the same type. For example, you can create a 
 
 When creating an RPC connection through message ports, you have to consider the following:
 
-- Each type of target is different, and has a specific implementation and API. For example, window objects act as message ports directly, while service workers require extra steps. There are also some peculiarities that you'll need to account for.
-- You may need to wait for one or both of the endpoints to load. In some cases, you might want to wait for a "load" or "ready" event (e.g. waiting for a parent window, iframe, or worker to load), or even send a "ready" message to the other endpoint after creating the RPC instance to signal that it's ready to receive messages.
-- A single target port can receive messages from multiple sources. For example, a `window` object can receive messages from multiple iframes. To make sure that your RPC messages are not mixed with other messages, you can use the `transportId` option to ensure that only messages with the same `transportId` are handled.
-- For advanced use cases, you can use the `filter` option to filter messages dynamically.
+- Each type of target is different, and has a specific implementation and API. For example, window objects act as message ports directly, while service workers require extra steps. Each has some peculiarities that you'll need to account for.
+- You may need to wait for one or both of the endpoints to load. In some cases, you might want to wait for a "load" or "ready" event (e.g. waiting for a parent window, iframe, or worker to load), or even manually send a "ready" message to the other endpoint after creating the RPC instance to signal that it's ready to receive messages and requests.
+- A single target port can receive messages from multiple sources. For example, a `window` object can receive messages from multiple iframes (some might even be out of your control). To make sure that your RPC messages are not mixed with other messages, you can use the `transportId` option to ensure that only messages that match that specific ID are handled.
+- For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the raw `MessageEvent` object, and should return `true` if the message should be handled, and `false` otherwise.
 
 <!-- TODO: add a few examples: iframes, workers, BroadcastChannel -->
 
@@ -90,6 +90,10 @@ When creating an RPC connection through message ports, you have to consider the 
 ```ts
 function createTransportFromBrowserRuntimePort(
   port: Browser.Runtime.Port | Chrome.runtime.Port,
+  options?: {
+    transportId?: string | number;
+    filter?: (message: any, port: Browser.Runtime.Port) => boolean;
+  },
 ): RPCTransport;
 ```
 
@@ -126,6 +130,10 @@ browser.runtime.onConnect.addListener((port) => {
   }
 });
 ```
+
+It is recommended to use a port that has a unique name and is used exclusively for the RPC connection. If the port is also used for other purposes, the RPC instance might receive messages that are not intended for it.
+
+If you do need to share a port, you can use the `transportId` option to ensure that only messages that match that specific ID are handled. For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the (low-level) message object and the port, and should return `true` if the message should be handled, and `false` otherwise.
 
 ---
 
