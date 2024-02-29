@@ -1,6 +1,7 @@
 // data
 // ----
 
+import { type LiteRPCInstance } from "./lite-rpc.js";
 import { type _RPCOptions, type RPCInstance } from "./rpc.js";
 
 /**
@@ -502,4 +503,38 @@ export type RPC<
   | MethodsByLocalSchema<Schema>
   | MethodsByRemoteSchema<RemoteSchema>
   | MethodsByRemoteSchemaAndLocalSchema<Schema, RemoteSchema>
+>;
+
+type LiteRPCRequestsOutMethod = "request";
+type LiteRPCMessagesInMethod = "addMessageListener" | "removeMessageListener";
+type LiteRPCMessagesOutMethod = "send";
+
+type LiteMethodsByLocalSchema<Schema extends RPCSchema> =
+  NonNullable<unknown> extends Schema["messages"]
+    ? never
+    : LiteRPCMessagesOutMethod;
+
+type LiteMethodsByRemoteSchema<RemoteSchema extends RPCSchema> =
+  | (NonNullable<unknown> extends RemoteSchema["requests"]
+      ? never
+      : LiteRPCRequestsOutMethod)
+  | (NonNullable<unknown> extends RemoteSchema["messages"]
+      ? never
+      : LiteRPCMessagesInMethod);
+
+/**
+ * A lite RPC instance type, tailored to a specific set of schemas.
+ * Methods will be ommitted if they are not supported according
+ * to the schemas.
+ *
+ * For example, if the remote schema doesn't have a `requests`
+ * property, the `request` method will be omitted because the
+ * instance won't be able to send requests.
+ */
+export type LiteRPC<
+  Schema extends RPCSchema,
+  RemoteSchema extends RPCSchema,
+> = Pick<
+  LiteRPCInstance<Schema, RemoteSchema>,
+  LiteMethodsByLocalSchema<Schema> | LiteMethodsByRemoteSchema<RemoteSchema>
 >;
