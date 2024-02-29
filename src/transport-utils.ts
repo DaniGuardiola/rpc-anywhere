@@ -54,3 +54,19 @@ export function rpcTransportMessageIn(
   if (filterResult === false) return [true];
   return [false, data];
 }
+
+/**
+ * Determines if a message should be ignored, and if not, returns the message
+ * too. If the message was wrapped in a transport object, it is unwrapped.
+ */
+export function rpcTransportMessageInLite(
+  message: any,
+  transportId?: string | number,
+): [ignore: false, message: any] | [ignore: true] {
+  let data = message;
+  if (transportId) {
+    if (message[transportIdKey] !== transportId) return [true];
+    data = message.data;
+  }
+  return [false, data];
+}

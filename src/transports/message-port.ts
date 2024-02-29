@@ -6,7 +6,7 @@ import {
 import { type RPCTransport } from "../types.js";
 
 /**
- * Options for the message port transport.
+ * Options for the browser runtime port transport.
  */
 export type RPCMessagePortTransportOptions = Pick<
   RPCTransportOptions,
@@ -26,7 +26,7 @@ export type RPCMessagePortTransportOptions = Pick<
 };
 
 /**
- * Creates a transport from an object that supports `postMessage(message)`
+ * Creates a transport from objects that support `postMessage(message)`
  * and `addEventListener("message", listener)`. This includes `Window`,
  * `Worker`, `MessagePort`, and `BroadcastChannel`.
  *

@@ -10,7 +10,7 @@ import { type RPCTransport } from "../types.js";
 type Port = Browser.Runtime.Port | Chrome.runtime.Port;
 
 /**
- * Options for the message port transport.
+ * Options for the browser runtime port transport.
  */
 export type RPCBrowserRuntimePortTransportOptions = Pick<
   RPCTransportOptions,

@@ -45,13 +45,12 @@ type DebugHooks = {
 export type _RPCOptions<Schema extends RPCSchema> = {
   /**
    * A transport object that will be used to send and receive
-   * messages. Setting the `send` function manually will override
-   * the transport's `send` function.
+   * messages.
    */
   transport?: RPCTransport;
 
   /**
-   * The function that will be used to handle requests.
+   * The functions that will be used to handle requests.
    */
   requestHandler?: RPCRequestHandler<Schema["requests"]>;
 
