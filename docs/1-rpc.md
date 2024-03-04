@@ -318,6 +318,8 @@ rpc.setTransport(createTransportFromMessagePort(window, iframe.contentWindow));
 
 Keep in mind that if the transport is set lazily, the RPC instance will be unusable until then.
 
+Transports can be hot-swapped by using the lazy setter, as long as the transport supports this. All built-in transports support hot-swapping. If you create a custom transport, you can add support for it by making sure that it cleans up after itself when replaced, typically by unregistering event listeners in the `unregisterHandler` method.
+
 ## <a name='Requests'></a>Requests
 
 ### <a name='Makingrequests'></a>Making requests

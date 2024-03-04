@@ -39,8 +39,11 @@ A full list of built-in transports can be found below.
 
 <!-- vscode-markdown-toc -->
 
-- [Iframes, workers, broadcast channels... (message ports)](#iframes-workers-broadcast-channels-message-ports)
+- [Iframes](#iframes)
+  - [Example](#example)
 - [Browser extensions](#browser-extensions)
+  - [Example](#example-1)
+- [Message ports: windows, workers, broadcast channels](#message-ports-windows-workers-broadcast-channels)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -48,42 +51,66 @@ A full list of built-in transports can be found below.
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
-## <a name='Iframesworkersbroadcastchannels...messageports'></a>Iframes, workers, broadcast channels... (message ports)
+## Iframes
 
 ```ts
-export function createTransportFromMessagePort(
-  localPort: MessagePort | Window | Worker | BroadcastChannel,
-  remotePort: MessagePort | Window | Worker | BroadcastChannel,
+export async function createIframeTransport(
+  iframe: HTMLIFrameElement,
   options?: {
-    transportId?: string | number;
-    filter?: (event: MessageEvent) => boolean;
+    id?: string | number;
+    targetOrigin?: string; // default: "*"
   },
-): RPCTransport;
+): Promise<RPCTransport>;
+
+export async function createIframeParentTransport(options?: {
+  id?: string | number;
+}): Promise<RPCTransport>;
 ```
 
-Create transports for message ports, which can be used with window objects, iframes, workers, broadcast channels, and more.
+Create transports that enable communication between iframes and their parent windows. Uses [`MessageChannel`](<(https://developer.mozilla.org/en-US/docs/Web/API/Channel_Messaging_API/Using_channel_messaging)>) under the hood.
 
-Works with any objects that implement a [`MessagePort`](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort)-like interface: `addEventListener("message", listener)` and `postMessage(message)`. This is the case for window objects (including iframes), different types of workers, and broadcast channels. Here's a quick breakdown:
+- `createIframeTransport` is used from the _parent window_, and it creates a transport that sends messages to the _child iframe_.
+- `createIframeParentTransport` is used from the _child iframe_, and it creates a transport that sends messages to the _parent window_.
 
-- **[Window](https://developer.mozilla.org/en-US/docs/Web/API/Window)**: the global `window` or the `contentWindow` of an iframe.
-- **[Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker)**: a web worker. Other kinds of workers (like [service workers](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) and [worklets](https://developer.mozilla.org/en-US/docs/Web/API/Worklet)) are also supported through their respective interfaces.
-- **[BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)**: a special kind of message port that can send messages to all other `BroadcastChannel` objects with the same name. It can be used to communicate between different windows, tabs, or iframes.
+These functions are asynchronous because the following steps need to be followed to establish the connection:
 
-To create a transport, you need to specify two different ports:
+1. The parent window waits for the iframe to load, and then sends a "init" message to the iframe along with a message port.
+2. The child iframe waits for the "init" message, stores the port for future use by the transport, and sends a "ready" message back to the parent window.
+3. The parent window waits for the "ready" message.
 
-- `localPort`: the port that will receive and handle "message" events through `addEventListener("message", listener)`.
-- `remotePort`: the port that messages will be sent to through `postMessage(message)`.
+This process ensures that the connection is established and ready to use before creating the transports at both ends, while keeping things simple.
 
-Note that they don't need to be of the same type. For example, you can create a transport between a window and a worker, or between a worker and a broadcast channel. In some cases, you might want to use the same port for both, like when using a broadcast channel (messages are sent and received through the same instance).
+Using the `id` option is recommended to avoid potential conflicts with other transports. It must be unique and match on both ends. If security is a concern, the [`targetOrigin`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#targetorigin) option should be set to the expected origin of the iframe.
 
-When creating an RPC connection through message ports, you have to consider the following:
+### Example
 
-- Each type of target is different, and has a specific implementation and API. For example, window objects act as message ports directly, while service workers require extra steps. Each has some peculiarities that you'll need to account for.
-- You may need to wait for one or both of the endpoints to load. In some cases, you might want to wait for a "load" or "ready" event (e.g. waiting for a parent window, iframe, or worker to load), or even manually send a "ready" message to the other endpoint after creating the RPC instance to signal that it's ready to receive messages and requests.
-- A single target port can receive messages from multiple sources. For example, a `window` object can receive messages from multiple iframes (some might even be out of your control). To make sure that your RPC messages are not mixed with other messages, you can use the `transportId` option to ensure that only messages that match that specific ID are handled.
-- For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the raw `MessageEvent` object, and should return `true` if the message should be handled, and `false` otherwise.
+In the parent window:
 
-<!-- TODO: add a few examples: iframes, workers, BroadcastChannel -->
+```ts
+import { createIframeTransport } from "rpc-anywhere";
+
+createIframeTransport(iframeElement, { id: "my-iframe" }).then((transport) => {
+  const rpc = createRPC<Schema>({
+    transport,
+    // ...
+  });
+  // ...
+});
+```
+
+In the child iframe:
+
+```ts
+import { createIframeParentTransport } from "rpc-anywhere";
+
+createIframeParentTransport({ id: "my-iframe" }).then((transport) => {
+  const rpc = createRPC<Schema>({
+    transport,
+    // ...
+  });
+  // ...
+});
+```
 
 ## <a name='Browserextensions'></a>Browser extensions
 
@@ -97,9 +124,9 @@ function createTransportFromBrowserRuntimePort(
 ): RPCTransport;
 ```
 
-Create RPCs between a content script and a service worker, using browser runtime ports. TODO: add links.
+Create RPCs between a content script and a service worker, using browser runtime ports.
 
-**Example**
+### Example
 
 Here's how it looks in a content script:
 
@@ -134,6 +161,47 @@ browser.runtime.onConnect.addListener((port) => {
 It is recommended to use a port that has a unique name and is used exclusively for the RPC connection. If the port is also used for other purposes, the RPC instance might receive messages that are not intended for it.
 
 If you do need to share a port, you can use the `transportId` option to ensure that only messages that match that specific ID are handled. For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the (low-level) message object and the port, and should return `true` if the message should be handled, and `false` otherwise.
+
+## Message ports: windows, workers, broadcast channels
+
+> **Warning:** this API is low-level and requires a good understanding of the target environment and its APIs. It is recommended to use the higher-level APIs whenever possible:
+>
+> - For iframes, you can use `createIframeTransport` and `createIframeParentTransport`.
+
+```ts
+export function createTransportFromMessagePort(
+  localPort: MessagePort | Window | Worker | BroadcastChannel,
+  remotePort: MessagePort | Window | Worker | BroadcastChannel,
+  options?: {
+    transportId?: string | number;
+    filter?: (event: MessageEvent) => boolean;
+  },
+): RPCTransport;
+```
+
+Create transports for message ports, which can be used with window objects, iframes, workers, broadcast channels, and more.
+
+Works with any objects that implement a [`MessagePort`](https://developer.mozilla.org/en-US/docs/Web/API/MessagePort)-like interface: `addEventListener("message", listener)` and `postMessage(message)`. This is the case for window objects (including iframes), different types of workers, and broadcast channels. Here's a quick breakdown:
+
+- **[Window](https://developer.mozilla.org/en-US/docs/Web/API/Window)**: the global `window` or the `contentWindow` of an iframe.
+- **[Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker)**: a web worker. Other kinds of workers (like [service workers](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorker) and [worklets](https://developer.mozilla.org/en-US/docs/Web/API/Worklet)) are also supported through their respective interfaces.
+- **[BroadcastChannel](https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel)**: a special kind of message port that can send messages to all other `BroadcastChannel` objects with the same name. It can be used to communicate between different windows, tabs, or iframes.
+
+To create a transport, you need to specify two different ports:
+
+- `localPort`: the port that will receive and handle incoming "message" events through `addEventListener("message", listener)`.
+- `remotePort`: the port that outgoing messages will be sent to through `postMessage(message)`.
+
+Note that they don't need to be of the same type. For example, you can create a transport between a window and a worker, or between a worker and a broadcast channel. In some cases, you might want to use the same port for both, like when using a broadcast channel (messages are sent and received through the same instance).
+
+When creating an RPC connection through message ports, you have to consider the following:
+
+- Each type of target is different, and has a specific implementation and API. For example, window objects act as message ports directly, while service workers require extra steps. Each has some peculiarities that you'll need to account for.
+- You may need to wait for one or both of the endpoints to load. In some cases, you might want to wait for a "load" or "ready" event (e.g. waiting for a parent window, iframe, or worker to load), or even manually send a "ready" message to the other endpoint after creating the RPC instance to signal that it's ready to receive messages and requests.
+- A single target port can receive messages from multiple sources. For example, a `window` object can receive messages from multiple iframes (some might even be out of your control). To make sure that your RPC messages are not mixed with other messages, you can use the `transportId` option to ensure that only messages that match that specific ID are handled.
+- For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the raw `MessageEvent` object, and should return `true` if the message should be handled, and `false` otherwise.
+
+<!-- TODO: add a few examples: iframes, workers, BroadcastChannel -->
 
 ---
 

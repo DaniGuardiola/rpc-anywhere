@@ -14,7 +14,7 @@ Create a type-safe RPC anywhere.
 npm i rpc-anywhere
 ```
 
-[✨ Interactive demo ✨](https://rpc-anywhere.dio.la/)
+[✨ Interactive iframe demo ✨](https://rpc-anywhere.dio.la/)
 
 ---
 
@@ -75,6 +75,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 - [Type safety and features](#type-safety-and-features)
 - [Features under consideration](#features-under-consideration)
 - [Prior art](#prior-art)
+- [Contributing](#contributing)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -242,7 +243,7 @@ The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywh
 
 **This package is published as both ESM and CommonJS.**
 
-## <a name='Typesafetyfeatures'></a>Type safety and features
+## <a name='Typesafetyandfeatures'></a>Type safety and features
 
 RPC Anywhere is designed to be as type-safe as possible while maintaining great ergonomics and flexibility. Here are some examples:
 
@@ -262,6 +263,7 @@ Besides these, many other minor type-related details make RPC Anywhere extremely
 
 If you need any of these, please [file a feature request](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml) or upvote an existing one! 😄
 
+- Higher level built-in transports for workers, broadcast channels and browser extensions.
 - Transport: Electron ipcMain/ipcRenderer.
 - Transport: WebSockets.
 - Transport: WebRTC.
@@ -272,6 +274,7 @@ If you need any of these, please [file a feature request](https://github.com/Dan
 - Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler.
 - A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport.
 - Runtime validation support (e.g. through zod or valibot).
+- Better error handling.
 - [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art
@@ -281,3 +284,9 @@ RPC Anywhere is inspired by [JSON-RPC](https://www.jsonrpc.org/), with a few sma
 For example, the concept of "messages" in RPC Anywhere resembles "notifications" in JSON-RPC. Some implementation details (like using an `id` property in requests and responses) are also similar.
 
 A notable difference is that RPC Anywhere is completely flexible, while JSON-RPC is client-server oriented.
+
+## <a name='Contributing'></a>Contributing
+
+Contributions are welcome! Please make sure to create or update any tests as necessary when submitting a pull request.
+
+The demo is useful for quick manual testing. To start it locally, run `bun demo` and open the local server's address in your browser (probably `localhost:8080`, check the console output). It will automatically reload when you make changes to the source code.

@@ -1,8 +1,8 @@
 import {
   type _RPCPacket,
+  createIframeTransport,
   createRPC,
   createRPCRequestHandler,
-  createTransportFromMessagePort,
   type RPCSchema,
 } from "../src/index.js"; // "rpc-anywhere"
 // import the iframe (remote) schema
@@ -39,24 +39,15 @@ export type ParentSchema = RPCSchema<
   typeof requestHandler
 >;
 
-function waitForFrameLoad(frame: HTMLIFrameElement) {
-  if (frame.contentWindow?.document.readyState === "complete")
-    return Promise.resolve();
-  return new Promise((resolve) =>
-    window.parent.addEventListener("load", resolve),
-  );
-}
-
-// wait for the iframe to load
-waitForFrameLoad(iframeEl).then(() => {
-  console.log("[parent] Parent loaded!");
+async function main() {
+  console.log("[parent] Connected to the child iframe!");
 
   // create the parent's RPC
   const rpc = createRPC<ParentSchema, IframeSchema>({
-    // provide the transport
-    transport: createTransportFromMessagePort(window, iframeEl.contentWindow!, {
-      // provide a unique ID that matches the iframe
-      transportId: "rpc-anywhere-demo",
+    // wait for connection with the iframe and
+    // pass the transport for our RPC
+    transport: await createIframeTransport(iframeEl, {
+      id: "rpc-anywhere-demo",
     }),
     // provide the request handler
     requestHandler,
@@ -67,8 +58,8 @@ waitForFrameLoad(iframeEl).then(() => {
   // use the proxy as an alias ✨
   const iframe = rpc.proxy;
 
-  // ready
-  rpc.addMessageListener("ready", onIframeReady);
+  // enable the UI since the RPC connection is now active
+  enableUI();
 
   // synced input
   syncedInputEl.addEventListener("input", () =>
@@ -84,7 +75,9 @@ waitForFrameLoad(iframeEl).then(() => {
     const currentColor = await iframe.request.getColor();
     el("button-color").textContent = currentColor;
   });
-});
+}
+
+main();
 
 type StoryDetails = {
   /** The name of the village where the story is set. */
@@ -128,7 +121,7 @@ function els<Element extends HTMLElement>(selector: string) {
   return Array.from(elements) as Element[];
 }
 
-function onIframeReady() {
+function enableUI() {
   el("ready").style.removeProperty("display"); // remove display: none
   el("loading").style.display = "none";
   el("controls").classList.remove("opacity-60", "pointer-events-none");
