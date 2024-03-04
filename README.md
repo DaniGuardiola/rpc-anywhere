@@ -66,6 +66,9 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 <!-- vscode-markdown-toc -->
 
 - [Features](#features)
+- [Usage example](#usage-example)
+  - [Iframe script (`iframe.ts`)](#iframe-script-iframets)
+  - [Parent window script (`parent.ts`)](#parent-window-script-parentts)
 - [Getting started](#getting-started)
   - [Schemas](#schemas)
   - [RPC instances](#rpc-instances)
@@ -97,6 +100,120 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 - Promise-based with optional proxy APIs (e.g. `proxy.requestName(params)`).
 - Schema type can be inferred from the request handlers.
 - Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
+
+## <a name='Usageexample'></a>Usage example
+
+This is a simplified example of an RPC connection between a parent window and an iframe.
+
+### <a name='Iframescriptiframe.ts'></a>Iframe script (`iframe.ts`)
+
+```ts
+import {
+  createIframeParentTransport,
+  createRPC,
+  createRPCRequestHandler,
+  type RPCSchema,
+} from "rpc-anywhere";
+
+// import the parent's (remote) schema
+import { type ParentSchema } from "./parent.js";
+
+// handle incoming requests from the parent
+const requestHandler = createRPCRequestHandler({
+  /** Greet a given target. */
+  greet: ({
+    name,
+  }: {
+    /** The target of the greeting. */
+    name: string;
+  }) => `Hello, ${name}!`, // respond to the parent
+});
+
+// create the iframe's schema
+export type IframeSchema = RPCSchema<
+  {
+    messages: {
+      buttonClicked: {
+        /** The button that was clicked. */
+        button: string;
+      };
+    };
+  },
+  // request types can be inferred from the handler
+  typeof requestHandler
+>;
+
+async function main() {
+  // create the iframe's RPC
+  const rpc = createRPC<IframeSchema, ParentSchema>({
+    // wait for a connection with the parent window and
+    // pass the transport to our RPC
+    transport: await createIframeParentTransport({ id: "my-rpc" }),
+    // provide the request handler
+    requestHandler,
+  });
+
+  // send a message to the parent
+  blueButton.addEventListener("click", () => {
+    rpc.send.buttonClicked({ button: "blue" });
+  });
+
+  // listen for messages from the iframe
+  rpc.addMessageListener("userLoggedIn", ({ name }) => {
+    console.log(`The user "${name}" logged in`);
+  });
+}
+
+main();
+```
+
+### <a name='Parentwindowscriptparent.ts'></a>Parent window script (`parent.ts`)
+
+```ts
+import { createIframeTransport, createRPC, type RPCSchema } from "rpc-anywhere";
+
+// import the iframe's (remote) schema
+import { type IframeSchema } from "./iframe.js";
+
+// create the parent window's schema
+export type ParentSchema = RPCSchema<{
+  messages: {
+    userLoggedIn: {
+      /** The user's name. */
+      name: string;
+    };
+  };
+}>;
+
+async function main() {
+  // create the parent window's RPC
+  const rpc = createRPC<ParentSchema, IframeSchema>({
+    // wait for a connection with the iframe and
+    // pass the transport to our RPC
+    transport: await createIframeTransport(
+      document.getElementById("my-iframe"),
+      { id: "my-rpc" },
+    ),
+  });
+
+  // use the proxy API as an alias ✨
+  const iframe = rpc.proxy;
+
+  // make a request to the iframe
+  const greeting = await iframe.request.greet({ name: "world" });
+  console.log(greeting); // Hello, world!
+
+  // send a message to the iframe
+  onUserLoggedIn((user) => iframe.send.userLoggedIn({ name: user.name }));
+
+  // listen for messages from the iframe
+  rpc.addMessageListener("buttonClicked", ({ button }) => {
+    console.log(`The button "${button}" was clicked`);
+  });
+}
+
+main();
+```
 
 ## <a name='Gettingstarted'></a>Getting started
 
