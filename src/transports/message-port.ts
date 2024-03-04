@@ -23,6 +23,11 @@ export type RPCMessagePortTransportOptions = Pick<
    * based on `event.origin` or `event.source`.
    */
   filter?: (event: MessageEvent) => boolean;
+
+  /**
+   * The remote port to send messages to through `postMessage(message)`.
+   */
+  remotePort?: MessagePort | Window | Worker | BroadcastChannel;
 };
 
 /**
@@ -35,23 +40,22 @@ export type RPCMessagePortTransportOptions = Pick<
 export function createTransportFromMessagePort(
   /**
    * The local port that will receive and handled "message" events
-   * through `addEventListener("message", listener)`.
+   * through `addEventListener("message", listener)`. If the `remotePort`
+   * option is omitted, it will also be used to send messages through
+   * `postMessage(message)`.
    */
-  localPort: MessagePort | Window | Worker | BroadcastChannel,
-  /**
-   * The remote port to send messages to through `postMessage(message)`.
-   */
-  remotePort: MessagePort | Window | Worker | BroadcastChannel,
+  port: MessagePort | Window | Worker | BroadcastChannel,
+
   /**
    * Options for the message port transport.
    */
   options: RPCMessagePortTransportOptions = {},
 ): RPCTransport {
-  const { transportId, filter } = options;
+  const { transportId, filter, remotePort } = options;
 
   // little white TypeScript lies
-  const local = localPort as Window;
-  const remote = remotePort as Window;
+  const local = port as Window;
+  const remote = (remotePort ?? port) as Window;
 
   let transportHandler: ((event: MessageEvent) => any) | undefined;
   return {

@@ -75,9 +75,7 @@ export async function createIframeTransport(
   const channel = new MessageChannel();
   const { port1, port2 } = channel;
   port1.start();
-  const transport = createTransportFromMessagePort(port1, port1, {
-    transportId: id,
-  });
+  const transport = createTransportFromMessagePort(port1, { transportId: id });
   const readyPromise = portReadyPromise(port1);
   await waitForLoad(iframe);
   if (!iframe.contentWindow) throw new Error("Unexpected iframe state");
@@ -136,5 +134,7 @@ export async function createIframeParentTransport({
   const port = await waitForInit(id);
   port.start();
   port.postMessage(IFRAME_READY_MSG);
-  return createTransportFromMessagePort(port, port, { transportId: id });
+  return createTransportFromMessagePort(port, { transportId: id });
 }
+
+// TODO: iframe transport tests.
