@@ -51,7 +51,7 @@ A full list of built-in transports can be found below.
 	/vscode-markdown-toc-config -->
 <!-- /vscode-markdown-toc -->
 
-## Iframes
+## <a name='Iframes'></a>Iframes
 
 ```ts
 export async function createIframeTransport(
@@ -61,7 +61,9 @@ export async function createIframeTransport(
     targetOrigin?: string; // default: "*"
   },
 ): Promise<RPCTransport>;
+```
 
+```ts
 export async function createIframeParentTransport(options?: {
   id?: string | number;
 }): Promise<RPCTransport>;
@@ -82,7 +84,7 @@ This process ensures that the connection is established and ready to use before 
 
 Using the `id` option is recommended to avoid potential conflicts with other transports. It must be unique and match on both ends. If security is a concern, the [`targetOrigin`](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#targetorigin) option should be set to the expected origin of the iframe.
 
-### Example
+### <a name='Example'></a>Example
 
 In the parent window:
 
@@ -126,7 +128,7 @@ function createTransportFromBrowserRuntimePort(
 
 Create RPCs between a content script and a service worker, using browser runtime ports.
 
-### Example
+### <a name='Example-1'></a>Example
 
 Here's how it looks in a content script:
 
@@ -162,7 +164,7 @@ It is recommended to use a port that has a unique name and is used exclusively f
 
 If you do need to share a port, you can use the `transportId` option to ensure that only messages that match that specific ID are handled. For advanced use cases, you can use the `filter` option to filter messages dynamically. The filter function will be called with the (low-level) message object and the port, and should return `true` if the message should be handled, and `false` otherwise.
 
-## Message ports: windows, workers, broadcast channels
+## <a name='Messageports:windowsworkersbroadcastchannels'></a>Message ports: windows, workers, broadcast channels
 
 > **Warning:** this API is low-level and requires a good understanding of the target environment and its APIs. It is recommended to use the higher-level APIs whenever possible:
 >
