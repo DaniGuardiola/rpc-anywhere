@@ -1,5 +1,17 @@
 # RPC Anywhere
 
+## 1.6.0
+
+### Minor Changes
+
+- e76f323: Added iframe transport.
+- e76f323: Updated demo to use the new iframe transport.
+- e76f323: Improved README and added better examples.
+- e76f323: Added worker transport.
+- e76f323: Added broadcast channel transport.
+- e76f323: Improved documentation.
+- e76f323: Improved the `createTransportFromMessagePort` API.
+
 ## 1.5.0
 
 ### Minor Changes
