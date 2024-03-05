@@ -1,3 +1,5 @@
+/// <reference lib="webworker" />
+
 import {
   rpcTransportMessageIn,
   rpcTransportMessageOut,
@@ -6,7 +8,7 @@ import {
 import { type RPCTransport } from "../types.js";
 
 /**
- * Options for the browser runtime port transport.
+ * Options for the message port transport.
  */
 export type RPCMessagePortTransportOptions = Pick<
   RPCTransportOptions,
@@ -27,7 +29,13 @@ export type RPCMessagePortTransportOptions = Pick<
   /**
    * The remote port to send messages to through `postMessage(message)`.
    */
-  remotePort?: MessagePort | Window | Worker | BroadcastChannel;
+  remotePort?:
+    | MessagePort
+    | Window
+    | Worker
+    | ServiceWorker
+    | Client
+    | BroadcastChannel;
 };
 
 /**
@@ -44,7 +52,12 @@ export function createTransportFromMessagePort(
    * option is omitted, it will also be used to send messages through
    * `postMessage(message)`.
    */
-  port: MessagePort | Window | Worker | BroadcastChannel,
+  port:
+    | MessagePort
+    | Window
+    | Worker
+    | ServiceWorkerContainer
+    | BroadcastChannel,
 
   /**
    * Options for the message port transport.
@@ -54,8 +67,8 @@ export function createTransportFromMessagePort(
   const { transportId, filter, remotePort } = options;
 
   // little white TypeScript lies
-  const local = port as Window;
-  const remote = (remotePort ?? port) as Window;
+  const local = port as MessagePort;
+  const remote = (remotePort ?? port) as MessagePort;
 
   let transportHandler: ((event: MessageEvent) => any) | undefined;
   return {

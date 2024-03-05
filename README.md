@@ -10,6 +10,8 @@
 
 Create a type-safe RPC anywhere.
 
+> RPC Anywhere powers [Electrobun](https://www.electrobun.dev/), [Teampilot AI](https://teampilot.ai/), and more.
+
 ```bash
 npm i rpc-anywhere
 ```
@@ -18,9 +20,9 @@ npm i rpc-anywhere
 
 ---
 
-RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer is provided. In other words: a way for messages to get from point A to point B and vice-versa.
+RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer (a way for messages to move between point A and point B) is provided.
 
-It also ships with a few transports: iframes, Electron, browser extensions, workers...
+Designed to be the last RPC library you'll ever need, it ships with a few transports out of the box: iframes, Electron IPC, browser extensions, workers...
 
 <details>
 <summary><b>What is an RPC?</b></summary>
@@ -41,6 +43,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 > - Websites: iframes, workers, `BroadcastChannel`.
 > - Browser extensions: content script ↔ service worker.
 > - Electron: renderer process ↔ main process.
+> - WebSocket.
 
 </details>
 
@@ -66,7 +69,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 <!-- vscode-markdown-toc -->
 
 - [Features](#features)
-- [Usage example](#usage-example)
+- [Usage example (parent window to iframe)](#usage-example-parent-window-to-iframe)
   - [Iframe script (`iframe.ts`)](#iframe-script-iframets)
   - [Parent window script (`parent.ts`)](#parent-window-script-parentts)
 - [Getting started](#getting-started)
@@ -92,16 +95,19 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 
 - Type-safe and extensively tested.
 - Transport agnostic, with ready-to-use transports:
-  - Message ports: `window`, iframes, workers, broadcast channels, etc.
-  - Browser extensions: content scripts ↔ service worker.
+  - Iframes.
+  - Web workers.
+  - Browser extensions.
   - Electron IPC (coming soon).
-- Tiny (~1kb gzipped).
+  - Broadcast channels.
+  - Message ports: advanced use cases like service workers, worklets, etc.
+- Tiny (~1.4kb gzipped, transport included).
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy APIs (e.g. `proxy.requestName(params)`).
+- Promise-based with optional proxy APIs (e.g. `rpc.requestName(params)`).
 - Schema type can be inferred from the request handlers.
 - Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
 
-## <a name='Usageexample'></a>Usage example
+## <a name='Usageexampleparentwindowtoiframe'></a>Usage example (parent window to iframe)
 
 This is a simplified example of an RPC connection between a parent window and an iframe.
 
@@ -380,18 +386,19 @@ Besides these, many other minor type-related details make RPC Anywhere extremely
 
 If you need any of these, please [file a feature request](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml) or upvote an existing one! 😄
 
-- Higher level built-in transports for workers, broadcast channels and browser extensions.
 - Transport: Electron ipcMain/ipcRenderer.
 - Transport: WebSockets.
+- Transport: service workers (this is already possible through the message port transport, but it's a low-level API).
 - Transport: WebRTC.
-- Transport: localStorage events (across two opened tabs of the same website).
 - Transport: HTTP(S) requests.
 - Transport: UDP.
 - Many-to-one or many-to-many connections.
 - Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler.
-- A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport.
+- A simplified way to wait for connections to be established in any context, like across a chain of bridged transports.
 - Runtime validation support (e.g. through zod or valibot).
 - Better error handling.
+- Support for transferable objects in transports that support it (e.g. workers).
+- Lite version with a much smaller footprint.
 - [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art
@@ -407,3 +414,5 @@ A notable difference is that RPC Anywhere is completely flexible, while JSON-RPC
 Contributions are welcome! Please make sure to create or update any tests as necessary when submitting a pull request.
 
 The demo is useful for quick manual testing. To start it locally, run `bun demo` and open the local server's address in your browser (probably `localhost:8080`, check the console output). It will automatically reload when you make changes to the source code.
+
+Before making big changes, consider opening a discussion first to get feedback and make sure the change is aligned with the project's goals.

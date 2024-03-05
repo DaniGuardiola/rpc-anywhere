@@ -1,4 +1,7 @@
-import { createTransportFromMessagePort } from "../index.js";
+import {
+  createTransportFromMessagePort,
+  type RPCMessagePortTransportOptions,
+} from "../index.js";
 
 const IFRAME_MSG_KEY = "[iframe-transport]";
 const IFRAME_READY_MSG = "[iframe-transport-ready]";
@@ -19,18 +22,43 @@ async function portReadyPromise(port: MessagePort) {
 }
 
 /**
+ * Options for the iframe transport.
+ */
+export type RPCIframeTransportOptions = Omit<
+  RPCMessagePortTransportOptions,
+  "transportId" | "remotePort"
+> & {
+  /**
+   * An identifier for the transport. This is used to match the iframe with
+   * the parent window. If not set, a default value will be used when establishing
+   * the connection.
+   */
+  transportId?: string | number;
+
+  /**
+   * The target origin of the iframe. This is used to restrict the domains
+   * that can communicate with the iframe. If not set, the iframe will accept
+   * messages from any origin. [Learn more about `targetOrigin` on MDN.](
+   * https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#targetorigin)
+   *
+   * @default "*"
+   */
+  targetOrigin?: string;
+};
+
+/**
  * Creates a transport to communicate with an iframe. This is an asynchronous
  * process because it requires waiting for the iframe to load and signal that
  * it's ready to receive messages.
  *
  * The target iframe must use `createIframeParentTransport` with a matching
- * `id` (if set).
+ * `transportId` or `filter` option (if set).
  *
  * Uses `MessageChannel` under the hood. [Learn more about the Channel Messaging
  * API on MDN.](https://developer.mozilla.org/en-US/docs/Web/API/Channel_Messaging_API/Using_channel_messaging)
  *
- * Using the `id` option is recommended to
- * avoid conflicts with other transports. If security is a concern, the
+ * Using the `transportId` option is recommended to
+ * avoid conflicts with other connections. If security is a concern, the
  * `targetOrigin` option should be set to the expected origin of the iframe.
  * [Learn more about `targetOrigin` on MDN.](
  * https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#targetorigin).
@@ -38,11 +66,10 @@ async function portReadyPromise(port: MessagePort) {
  * @example
  *
  * ```ts
- * createIframeTransport(iframeElement, { id: "my-iframe" }).then((transport) => {
- *   const rpc = createRPC<Schema>({
- *     transport
- *     // ...
- *   });
+ * const rpc = createRPC<ParentSchema, IframeSchema>({
+ *   transport: await createIframeTransport(iframeElement, {
+ *     transportId: "my-iframe"
+ *   }),
  *   // ...
  * });
  * ```
@@ -53,35 +80,21 @@ export async function createIframeTransport(
    * The iframe element to communicate with.
    */
   iframe: HTMLIFrameElement,
-  {
-    id = "default",
-    targetOrigin = "*",
-  }: {
-    /**
-     * An identifier for the transport. This is used to match the iframe with
-     * the parent window. If not set, a default value will be used.
-     */
-    id?: string | number;
-
-    /**
-     * The target origin of the iframe. This is used to restrict the domains
-     * that can communicate with the iframe. If not set, the iframe will accept
-     * messages from any origin. [Learn more about `targetOrigin` on MDN.](
-     * https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#targetorigin)
-     */
-    targetOrigin?: string;
-  } = {},
+  /**
+   * Options for the iframe transport.
+   */
+  options: RPCIframeTransportOptions = {},
 ) {
   const channel = new MessageChannel();
   const { port1, port2 } = channel;
   port1.start();
-  const transport = createTransportFromMessagePort(port1, { transportId: id });
+  const transport = createTransportFromMessagePort(port1, options);
   const readyPromise = portReadyPromise(port1);
   await waitForLoad(iframe);
   if (!iframe.contentWindow) throw new Error("Unexpected iframe state");
   iframe.contentWindow.postMessage(
-    { [IFRAME_MSG_KEY]: id ?? "default" },
-    targetOrigin,
+    { [IFRAME_MSG_KEY]: options.transportId ?? "default" },
+    options.targetOrigin ?? "*",
     [port2],
   );
   await readyPromise;
@@ -102,39 +115,47 @@ async function waitForInit(id: string | number) {
 }
 
 /**
+ * Options for the iframe parent transport.
+ */
+export type RPCIframeParentTransportOptions = Omit<
+  RPCMessagePortTransportOptions,
+  "transportId" | "remotePort"
+> & {
+  /**
+   * An identifier for the transport. This is used to match the iframe with
+   * the parent window. If not set, a default value will be used when establishing
+   * the connection.
+   */
+  transportId?: string | number;
+};
+
+/**
  * Creates a transport to communicate with the parent window from an iframe. This
  * is an asynchronous process because it requires waiting for the parent window
  * to connect to the iframe.
  *
- * The parent window must use `createIframeTransport` with a matching `id` (if set).
+ * The parent window must use `createIframeTransport` with a matching
+ * `transportId` or `filter` option (if set).
  *
- * Using the `id` option is recommended to avoid conflicts with other transports.
+ * Using the `transportId` option is recommended to avoid conflicts with other
+ * connections.
  *
  * @example
  *
  * ```ts
- * createIframeParentTransport({ id: "my-iframe" }).then((transport) => {
- *   const rpc = createRPC<Schema>({
- *     transport,
- *     // ...
- *   });
+ * const rpc = createRPC<IframeSchema, ParentSchema>({
+ *   transport: await createIframeParentTransport({ transportId: "my-iframe" }),
  *   // ...
  * });
  * ```
  */
-export async function createIframeParentTransport({
-  id = "default",
-}: {
-  /**
-   * An identifier for the transport. This is used to match the iframe with
-   * the parent window. If not set, a default value will be used.
-   */
-  id?: string | number;
-} = {}) {
-  const port = await waitForInit(id);
+export async function createIframeParentTransport(
+  options: RPCIframeParentTransportOptions = {},
+) {
+  const port = await waitForInit(options.transportId ?? "default");
   port.start();
   port.postMessage(IFRAME_READY_MSG);
-  return createTransportFromMessagePort(port, { transportId: id });
+  return createTransportFromMessagePort(port, options);
 }
 
 // TODO: iframe transport tests.

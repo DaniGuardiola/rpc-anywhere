@@ -51,8 +51,10 @@ async function main() {
   // create the iframe's RPC
   const rpc = createRPC<IframeSchema, ParentSchema>({
     // wait for a connection with the parent window and
-    // pass the transport for our RPC
-    transport: await createIframeParentTransport({ id: "rpc-anywhere-demo" }),
+    // pass the transport to our RPC
+    transport: await createIframeParentTransport({
+      transportId: "rpc-anywhere-demo",
+    }),
     // provide the request handler
     requestHandler,
     // this is for demo purposes - you can ignore it
