@@ -1,8 +1,8 @@
 import {
   type _RPCPacket,
+  createIframeParentTransport,
   createRPC,
   createRPCRequestHandler,
-  createTransportFromMessagePort,
   type RPCSchema,
 } from "../src/index.js"; // "rpc-anywhere"
 // import the parent (remote) schema
@@ -38,10 +38,6 @@ export type IframeSchema = RPCSchema<
   {
     messages: {
       /**
-       * Sent when the iframe's RPC is ready.
-       */
-      ready: void;
-      /**
        * Sent when the iframe's input is updated.
        */
       iframeInputUpdated: string;
@@ -51,23 +47,12 @@ export type IframeSchema = RPCSchema<
   typeof requestHandler
 >;
 
-function waitForFrameParentLoad() {
-  if (window.parent.document.readyState === "complete")
-    return Promise.resolve();
-  return new Promise((resolve) =>
-    window.parent.addEventListener("load", resolve),
-  );
-}
-
-// wait for the parent window to load
-waitForFrameParentLoad().then(() => {
-  console.log("[iframe] The parent has loaded!");
-
+async function main() {
   // create the iframe's RPC
   const rpc = createRPC<IframeSchema, ParentSchema>({
-    // provide the transport
-    transport: createTransportFromMessagePort(window, window.parent, {
-      // provide a unique ID that matches the parent
+    // wait for a connection with the parent window and
+    // pass the transport to our RPC
+    transport: await createIframeParentTransport({
       transportId: "rpc-anywhere-demo",
     }),
     // provide the request handler
@@ -78,9 +63,6 @@ waitForFrameParentLoad().then(() => {
 
   // use the proxy as an alias ✨
   const parent = rpc.proxy;
-
-  // send the ready message
-  parent.send.ready();
 
   // synced input
   syncedInputEl.addEventListener("input", () =>
@@ -106,7 +88,9 @@ waitForFrameParentLoad().then(() => {
     storyResultEl.style.removeProperty("display");
     storyTitleEl.textContent = title;
   });
-});
+}
+
+main();
 
 // non-demo stuff - you can ignore this :)
 // ---------------------------------------

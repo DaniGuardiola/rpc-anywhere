@@ -1,7 +1,7 @@
+import { type _RPCOptions, type RPCInstance } from "./rpc.js";
+
 // data
 // ----
-
-import { type _RPCOptions, type RPCInstance } from "./rpc.js";
 
 /**
  * A low-level RPC message representing a request.

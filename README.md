@@ -10,17 +10,19 @@
 
 Create a type-safe RPC anywhere.
 
+> RPC Anywhere powers [Electrobun](https://www.electrobun.dev/), [Teampilot AI](https://teampilot.ai/), and more.
+
 ```bash
 npm i rpc-anywhere
 ```
 
-[✨ Interactive demo ✨](https://rpc-anywhere.dio.la/)
+[✨ Interactive iframe demo ✨](https://rpc-anywhere.dio.la/)
 
 ---
 
-RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer is provided. In other words: a way for messages to get from point A to point B and vice-versa.
+RPC Anywhere lets you create RPCs in **any** context, as long as a transport layer (a way for messages to move between point A and point B) is provided.
 
-It also ships with a few transports: iframes, Electron, browser extensions, workers...
+Designed to be the last RPC library you'll ever need, it ships with a few transports out of the box: iframes, Electron IPC, browser extensions, workers...
 
 <details>
 <summary><b>What is an RPC?</b></summary>
@@ -41,6 +43,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 > - Websites: iframes, workers, `BroadcastChannel`.
 > - Browser extensions: content script ↔ service worker.
 > - Electron: renderer process ↔ main process.
+> - WebSocket.
 
 </details>
 
@@ -66,6 +69,9 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 <!-- vscode-markdown-toc -->
 
 - [Features](#features)
+- [Usage example (parent window to iframe)](#usage-example-parent-window-to-iframe)
+  - [Iframe script (`iframe.ts`)](#iframe-script-iframets)
+  - [Parent window script (`parent.ts`)](#parent-window-script-parentts)
 - [Getting started](#getting-started)
   - [Schemas](#schemas)
   - [RPC instances](#rpc-instances)
@@ -75,6 +81,7 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 - [Type safety and features](#type-safety-and-features)
 - [Features under consideration](#features-under-consideration)
 - [Prior art](#prior-art)
+- [Contributing](#contributing)
 
 <!-- vscode-markdown-toc-config
 	numbering=false
@@ -88,14 +95,131 @@ It also ships with a few transports: iframes, Electron, browser extensions, work
 
 - Type-safe and extensively tested.
 - Transport agnostic, with ready-to-use transports:
-  - Message ports: `window`, iframes, workers, broadcast channels, etc.
-  - Browser extensions: content scripts ↔ service worker.
+  - Iframes.
+  - Web workers.
+  - Browser extensions.
   - Electron IPC (coming soon).
-- Tiny (~1kb gzipped).
+  - Broadcast channels.
+  - Message ports: advanced use cases like service workers, worklets, etc.
+- Tiny (~1.4kb gzipped, transport included).
 - Flexible (no enforced client-server architecture).
-- Promise-based with optional proxy APIs (e.g. `proxy.requestName(params)`).
+- Promise-based with optional proxy APIs (e.g. `rpc.requestName(params)`).
 - Schema type can be inferred from the request handlers.
 - Optional lazy initialization (e.g. `rpc.setTransport(transport)`).
+
+## <a name='Usageexampleparentwindowtoiframe'></a>Usage example (parent window to iframe)
+
+This is a simplified example of an RPC connection between a parent window and an iframe.
+
+### <a name='Iframescriptiframe.ts'></a>Iframe script (`iframe.ts`)
+
+```ts
+import {
+  createIframeParentTransport,
+  createRPC,
+  createRPCRequestHandler,
+  type RPCSchema,
+} from "rpc-anywhere";
+
+// import the parent's (remote) schema
+import { type ParentSchema } from "./parent.js";
+
+// handle incoming requests from the parent
+const requestHandler = createRPCRequestHandler({
+  /** Greet a given target. */
+  greet: ({
+    name,
+  }: {
+    /** The target of the greeting. */
+    name: string;
+  }) => `Hello, ${name}!`, // respond to the parent
+});
+
+// create the iframe's schema
+export type IframeSchema = RPCSchema<
+  {
+    messages: {
+      buttonClicked: {
+        /** The button that was clicked. */
+        button: string;
+      };
+    };
+  },
+  // request types can be inferred from the handler
+  typeof requestHandler
+>;
+
+async function main() {
+  // create the iframe's RPC
+  const rpc = createRPC<IframeSchema, ParentSchema>({
+    // wait for a connection with the parent window and
+    // pass the transport to our RPC
+    transport: await createIframeParentTransport({ id: "my-rpc" }),
+    // provide the request handler
+    requestHandler,
+  });
+
+  // send a message to the parent
+  blueButton.addEventListener("click", () => {
+    rpc.send.buttonClicked({ button: "blue" });
+  });
+
+  // listen for messages from the iframe
+  rpc.addMessageListener("userLoggedIn", ({ name }) => {
+    console.log(`The user "${name}" logged in`);
+  });
+}
+
+main();
+```
+
+### <a name='Parentwindowscriptparent.ts'></a>Parent window script (`parent.ts`)
+
+```ts
+import { createIframeTransport, createRPC, type RPCSchema } from "rpc-anywhere";
+
+// import the iframe's (remote) schema
+import { type IframeSchema } from "./iframe.js";
+
+// create the parent window's schema
+export type ParentSchema = RPCSchema<{
+  messages: {
+    userLoggedIn: {
+      /** The user's name. */
+      name: string;
+    };
+  };
+}>;
+
+async function main() {
+  // create the parent window's RPC
+  const rpc = createRPC<ParentSchema, IframeSchema>({
+    // wait for a connection with the iframe and
+    // pass the transport to our RPC
+    transport: await createIframeTransport(
+      document.getElementById("my-iframe"),
+      { id: "my-rpc" },
+    ),
+  });
+
+  // use the proxy API as an alias ✨
+  const iframe = rpc.proxy;
+
+  // make a request to the iframe
+  const greeting = await iframe.request.greet({ name: "world" });
+  console.log(greeting); // Hello, world!
+
+  // send a message to the iframe
+  onUserLoggedIn((user) => iframe.send.userLoggedIn({ name: user.name }));
+
+  // listen for messages from the iframe
+  rpc.addMessageListener("buttonClicked", ({ button }) => {
+    console.log(`The button "${button}" was clicked`);
+  });
+}
+
+main();
+```
 
 ## <a name='Gettingstarted'></a>Getting started
 
@@ -242,7 +366,7 @@ The API reference is available at [tsdocs.dev](https://tsdocs.dev/docs/rpc-anywh
 
 **This package is published as both ESM and CommonJS.**
 
-## <a name='Typesafetyfeatures'></a>Type safety and features
+## <a name='Typesafetyandfeatures'></a>Type safety and features
 
 RPC Anywhere is designed to be as type-safe as possible while maintaining great ergonomics and flexibility. Here are some examples:
 
@@ -264,14 +388,17 @@ If you need any of these, please [file a feature request](https://github.com/Dan
 
 - Transport: Electron ipcMain/ipcRenderer.
 - Transport: WebSockets.
+- Transport: service workers (this is already possible through the message port transport, but it's a low-level API).
 - Transport: WebRTC.
-- Transport: localStorage events (across two opened tabs of the same website).
 - Transport: HTTP(S) requests.
 - Transport: UDP.
 - Many-to-one or many-to-many connections.
 - Improved type-safety in general handlers, i.e. the function form of request handlers, the fallback request handler, and the wildcard message handler.
-- A mechanism to wait for connections (e.g. the loading of an iframe) before being able to use a transport.
+- A simplified way to wait for connections to be established in any context, like across a chain of bridged transports.
 - Runtime validation support (e.g. through zod or valibot).
+- Better error handling.
+- Support for transferable objects in transports that support it (e.g. workers).
+- Lite version with a much smaller footprint.
 - [File a feature request!](https://github.com/DaniGuardiola/rpc-anywhere/issues/new?assignees=&labels=enhancement&projects=&template=feature-request.yaml)
 
 ## <a name='Priorart'></a>Prior art
@@ -281,3 +408,11 @@ RPC Anywhere is inspired by [JSON-RPC](https://www.jsonrpc.org/), with a few sma
 For example, the concept of "messages" in RPC Anywhere resembles "notifications" in JSON-RPC. Some implementation details (like using an `id` property in requests and responses) are also similar.
 
 A notable difference is that RPC Anywhere is completely flexible, while JSON-RPC is client-server oriented.
+
+## <a name='Contributing'></a>Contributing
+
+Contributions are welcome! Please make sure to create or update any tests as necessary when submitting a pull request.
+
+The demo is useful for quick manual testing. To start it locally, run `bun demo` and open the local server's address in your browser (probably `localhost:8080`, check the console output). It will automatically reload when you make changes to the source code.
+
+Before making big changes, consider opening a discussion first to get feedback and make sure the change is aligned with the project's goals.

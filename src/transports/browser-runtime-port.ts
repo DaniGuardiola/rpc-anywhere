@@ -10,7 +10,7 @@ import { type RPCTransport } from "../types.js";
 type Port = Browser.Runtime.Port | Chrome.runtime.Port;
 
 /**
- * Options for the message port transport.
+ * Options for the browser runtime port transport.
  */
 export type RPCBrowserRuntimePortTransportOptions = Pick<
   RPCTransportOptions,
@@ -31,7 +31,8 @@ export type RPCBrowserRuntimePortTransportOptions = Pick<
 
 /**
  * Creates a transport from a browser runtime port. Useful for RPCs
- * between content scripts and service workers in browser extensions.
+ * in browser extensions, like between content scripts and service workers
+ * (background scripts). [Learn more on MDN.](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/Port)
  */
 export function createTransportFromBrowserRuntimePort(
   /**
