@@ -37,8 +37,7 @@ type DebugHooks = {
 
   /**
    * A function that will be called when the RPC receives a low-level
-   * message. Setting the `send` function manually will override
-   * the transport's `send` function.
+   * message.
    */
   onReceive?: (packet: _RPCPacket) => void;
 };
