@@ -7,7 +7,11 @@ const IFRAME_MSG_KEY = "[iframe-transport]";
 const IFRAME_READY_MSG = "[iframe-transport-ready]";
 
 async function waitForLoad(element: HTMLElement) {
-  return new Promise((resolve) => element.addEventListener("load", resolve));
+  const readyState = (element as HTMLIFrameElement).contentDocument?.readyState;
+  const location = (element as HTMLIFrameElement).contentWindow?.location.href;
+  return location !== "about:blank" && readyState === "complete"
+    ? Promise.resolve()
+    : new Promise((resolve) => element.addEventListener("load", resolve));
 }
 
 async function portReadyPromise(port: MessagePort) {
