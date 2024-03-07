@@ -1,5 +1,11 @@
 # RPC Anywhere
 
+## 1.7.0
+
+### Minor Changes
+
+- a8a6c04: Fix: detect if iframes are already loaded.
+
 ## 1.6.0
 
 ### Minor Changes
