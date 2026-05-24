@@ -1,10 +1,10 @@
 import {
   type _RPCPacket,
-  createIframeTransport,
   createRPC,
   createRPCRequestHandler,
   type RPCSchema,
 } from "../src/index.js"; // "rpc-anywhere"
+import { createIframeTransport } from "../src/transports.js"; // "rpc-anywhere/transports"
 // import the iframe (remote) schema
 import { type IframeSchema } from "./iframe.js";
 

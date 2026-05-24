@@ -1,7 +1,9 @@
+/// <reference lib="dom" />
+
 import {
   createTransportFromMessagePort,
   type RPCMessagePortTransportOptions,
-} from "../index.js";
+} from "./message-port.js";
 
 const IFRAME_MSG_KEY = "[iframe-transport]";
 const IFRAME_READY_MSG = "[iframe-transport-ready]";
