@@ -1,5 +1,3 @@
-import { type Browser, type Chrome } from "browser-namespace";
-
 import {
   rpcTransportMessageIn,
   rpcTransportMessageOut,
@@ -7,7 +5,13 @@ import {
 } from "../transport-utils.js";
 import { type RPCTransport } from "../types.js";
 
-type Port = Browser.Runtime.Port | Chrome.runtime.Port;
+export type RPCBrowserRuntimePort = {
+  postMessage(message: any): void;
+  onMessage: {
+    addListener(callback: (message: any) => void): void;
+    removeListener(callback: (message: any) => void): void;
+  };
+};
 
 /**
  * Options for the browser runtime port transport.
@@ -26,7 +30,7 @@ export type RPCBrowserRuntimePortTransportOptions = Pick<
    * as arguments. For example, messages can be filtered
    * based on `port.name` or `port.sender`.
    */
-  filter?: (message: any, port: Browser.Runtime.Port) => boolean;
+  filter?: (message: any, port: RPCBrowserRuntimePort) => boolean;
 };
 
 /**
@@ -38,23 +42,23 @@ export function createTransportFromBrowserRuntimePort(
   /**
    * The browser runtime port.
    */
-  port: Port,
+  port: RPCBrowserRuntimePort,
   /**
    * Options for the browser runtime port transport.
    */
   options: RPCBrowserRuntimePortTransportOptions = {},
 ): RPCTransport {
   const { transportId, filter } = options;
-  let transportHandler: ((message: any, port: Port) => void) | undefined;
+  let transportHandler: ((message: any) => void) | undefined;
   return {
     send(data) {
       port.postMessage(rpcTransportMessageOut(data, { transportId }));
     },
     registerHandler(handler) {
-      transportHandler = (message, port) => {
+      transportHandler = (message) => {
         const [ignore, data] = rpcTransportMessageIn(message, {
           transportId,
-          filter: () => filter?.(message, port as Browser.Runtime.Port),
+          filter: () => filter?.(message, port),
         });
         if (ignore) return;
         handler(data);

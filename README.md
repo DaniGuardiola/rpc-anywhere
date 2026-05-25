@@ -115,11 +115,11 @@ This is a simplified example of an RPC connection between a parent window and an
 
 ```ts
 import {
-  createIframeParentTransport,
   createRPC,
   createRPCRequestHandler,
   type RPCSchema,
 } from "rpc-anywhere";
+import { createIframeParentTransport } from "rpc-anywhere/transports";
 
 // import the parent's (remote) schema
 import { type ParentSchema } from "./parent.js";
@@ -176,7 +176,8 @@ main();
 ### <a name='Parentwindowscriptparent.ts'></a>Parent window script (`parent.ts`)
 
 ```ts
-import { createIframeTransport, createRPC, type RPCSchema } from "rpc-anywhere";
+import { createRPC, type RPCSchema } from "rpc-anywhere";
+import { createIframeTransport } from "rpc-anywhere/transports";
 
 // import the iframe's (remote) schema
 import { type IframeSchema } from "./iframe.js";

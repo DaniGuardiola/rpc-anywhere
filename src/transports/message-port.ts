@@ -1,11 +1,31 @@
-/// <reference lib="webworker" />
-
 import {
   rpcTransportMessageIn,
   rpcTransportMessageOut,
   type RPCTransportOptions,
 } from "../transport-utils.js";
 import { type RPCTransport } from "../types.js";
+
+export type RPCMessagePortEvent = {
+  data: any;
+};
+
+export type RPCMessagePort = {
+  postMessage(message: any, ...args: any[]): void;
+  addEventListener(
+    type: "message",
+    listener: (event: RPCMessagePortEvent) => any,
+    ...args: any[]
+  ): void;
+  removeEventListener(
+    type: "message",
+    listener: (event: RPCMessagePortEvent) => any,
+    ...args: any[]
+  ): void;
+};
+
+export type RPCMessagePortRemote = {
+  postMessage(message: any, ...args: any[]): void;
+};
 
 /**
  * Options for the message port transport.
@@ -24,18 +44,12 @@ export type RPCMessagePortTransportOptions = Pick<
    * object as its only argument. For example, messages can be filtered
    * based on `event.origin` or `event.source`.
    */
-  filter?: (event: MessageEvent) => boolean;
+  filter?: (event: RPCMessagePortEvent) => boolean;
 
   /**
    * The remote port to send messages to through `postMessage(message)`.
    */
-  remotePort?:
-    | MessagePort
-    | Window
-    | Worker
-    | ServiceWorker
-    | Client
-    | BroadcastChannel;
+  remotePort?: RPCMessagePortRemote;
 };
 
 /**
@@ -52,12 +66,7 @@ export function createTransportFromMessagePort(
    * option is omitted, it will also be used to send messages through
    * `postMessage(message)`.
    */
-  port:
-    | MessagePort
-    | Window
-    | Worker
-    | ServiceWorkerContainer
-    | BroadcastChannel,
+  port: RPCMessagePort,
 
   /**
    * Options for the message port transport.
@@ -66,17 +75,15 @@ export function createTransportFromMessagePort(
 ): RPCTransport {
   const { transportId, filter, remotePort } = options;
 
-  // little white TypeScript lies
-  const local = port as MessagePort;
-  const remote = (remotePort ?? port) as MessagePort;
+  const remote = remotePort ?? port;
 
-  let transportHandler: ((event: MessageEvent) => any) | undefined;
+  let transportHandler: ((event: RPCMessagePortEvent) => any) | undefined;
   return {
     send(data) {
       remote.postMessage(rpcTransportMessageOut(data, { transportId }));
     },
     registerHandler(handler) {
-      transportHandler = (event: MessageEvent) => {
+      transportHandler = (event) => {
         const message = event.data;
         const [ignore, data] = rpcTransportMessageIn(message, {
           transportId,
@@ -85,11 +92,11 @@ export function createTransportFromMessagePort(
         if (ignore) return;
         handler(data);
       };
-      local.addEventListener("message", transportHandler);
+      port.addEventListener("message", transportHandler);
     },
     unregisterHandler() {
       if (transportHandler)
-        local.removeEventListener("message", transportHandler);
+        port.removeEventListener("message", transportHandler);
     },
   };
 }

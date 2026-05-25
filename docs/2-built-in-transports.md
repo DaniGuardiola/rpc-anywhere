@@ -16,7 +16,7 @@ RPC Anywhere ships with a few built-in ways to create transports for common use 
 For example, a transport for browser extensions (content script ↔ service worker) can be created with `createTransportFromBrowserRuntimePort(port)`. The transport can then be passed to `createRPC` or lazily set on an existing RPC instance with `setTransport(transport)`.
 
 ```ts
-import { createTransportFromBrowserRuntimePort } from "rpc-anywhere";
+import { createTransportFromBrowserRuntimePort } from "rpc-anywhere/transports";
 
 const port = browser.runtime.connect({ name: "my-rpc-port" });
 
@@ -109,7 +109,7 @@ Using the `transportId` option is recommended to avoid potential conflicts with 
 In the parent window:
 
 ```ts
-import { createIframeTransport } from "rpc-anywhere";
+import { createIframeTransport } from "rpc-anywhere/transports";
 
 const iframeElement = document.getElementById("my-iframe") as HTMLIFrameElement;
 
@@ -127,7 +127,7 @@ createIframeTransport(iframeElement, { transportId: "my-transport" }).then(
 In the child iframe:
 
 ```ts
-import { createIframeParentTransport } from "rpc-anywhere";
+import { createIframeParentTransport } from "rpc-anywhere/transports";
 
 createIframeParentTransport({ transportId: "my-transport" }).then(
   (transport) => {
@@ -146,10 +146,10 @@ createIframeParentTransport({ transportId: "my-transport" }).then(
 
 ```ts
 function createTransportFromBrowserRuntimePort(
-  port: Browser.Runtime.Port | Chrome.runtime.Port,
+  port: RPCBrowserRuntimePort,
   options?: {
     transportId?: string | number;
-    filter?: (message: any, port: Browser.Runtime.Port) => boolean;
+    filter?: (message: any, port: RPCBrowserRuntimePort) => boolean;
   },
 ): RPCTransport;
 ```
@@ -173,7 +173,7 @@ Other sorts of connections are possible like in the opposite direction (from a s
 In a content script:
 
 ```ts
-import { createTransportFromBrowserRuntimePort } from "rpc-anywhere";
+import { createTransportFromBrowserRuntimePort } from "rpc-anywhere/transports";
 
 const port = browser.runtime.connect({ name: "my-rpc-port" });
 
@@ -187,7 +187,7 @@ const rpc = createRPC<ScriptSchema, WorkerSchema>({
 In a service worker:
 
 ```ts
-import { createTransportFromBrowserRuntimePort } from "rpc-anywhere";
+import { createTransportFromBrowserRuntimePort } from "rpc-anywhere/transports";
 
 browser.runtime.onConnect.addListener((port) => {
   if (port.name === "my-rpc-port") {
@@ -238,7 +238,7 @@ The `transportId` option can be used to avoid potential conflicts with other mes
 In the parent context:
 
 ```ts
-import { createWorkerTransport } from "rpc-anywhere";
+import { createWorkerTransport } from "rpc-anywhere/transports";
 
 const worker = new Worker("worker.js");
 
@@ -252,7 +252,7 @@ const rpc = createRPC<Schema>({
 In the worker:
 
 ```ts
-import { createWorkerParentTransport } from "rpc-anywhere";
+import { createWorkerParentTransport } from "rpc-anywhere/transports";
 
 const rpc = createRPC<Schema>({
   transport: createWorkerParentTransport(),
@@ -288,7 +288,7 @@ To avoid issues, it is recommended to avoid using requests since they are design
 ### <a name='Example-1'></a>Example
 
 ```ts
-import { createTransportFromBroadcastChannel } from "rpc-anywhere";
+import { createTransportFromBroadcastChannel } from "rpc-anywhere/transports";
 
 const channel = new BroadcastChannel("my-channel");
 

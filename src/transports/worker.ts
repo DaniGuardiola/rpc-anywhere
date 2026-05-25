@@ -1,4 +1,4 @@
-/// <reference lib="webworker" />
+/// <reference lib="dom" />
 
 import {
   createTransportFromMessagePort,
