@@ -11,3 +11,5 @@ node_modules/
 dist/
 .tshy/
 .tshy-build/
+
+dist-demo/

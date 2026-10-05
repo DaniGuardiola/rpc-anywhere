@@ -22,7 +22,8 @@
     "demo:watch:js": "bun build-demo:js --watch",
     "demo:watch:css": "bun build-demo:css --watch --watch",
     "demo:serve": "bun --bun servor demo --reload",
-    "demo": "bun --bun conc -k bun:demo:*"
+    "demo": "bun --bun conc -k bun:demo:*",
+    "build-pages": "bun run build-demo && bun scripts/build-demo-pages.ts"
   },
   "dependencies": {
     "browser-namespace": "^1.4.0"

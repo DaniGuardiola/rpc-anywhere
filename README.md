@@ -416,3 +416,12 @@ Contributions are welcome! Please make sure to create or update any tests as nec
 The demo is useful for quick manual testing. To start it locally, run `bun demo` and open the local server's address in your browser (probably `localhost:8080`, check the console output). It will automatically reload when you make changes to the source code.
 
 Before making big changes, consider opening a discussion first to get feedback and make sure the change is aligned with the project's goals.
+
+### Cloudflare demo deployment
+
+The `rpc-anywhere.dio.la` demo builds from this repository's `main` branch through
+Cloudflare Pages. Production pushes deploy automatically; previews are disabled.
+Build command: `bun install --ignore-scripts --frozen-lockfile && bun run build-pages`.
+Output directory: `dist-demo`. The build image pins `BUN_VERSION=1.4.2` and
+`SKIP_DEPENDENCY_INSTALL=true`. The output includes only the demo assets and an
+explicit 404 page, preserving the existing deployment behavior.
